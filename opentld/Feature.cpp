@@ -2,9 +2,9 @@
 
 Feature::Feature(const double minScale, const double maxScale)
 {
-	std::random_device randomDevice;
-	std::mt19937 randomEngine(randomDevice());
-	std::uniform_real_distribution<double> distribution(0.0, 1.0);
+    std::random_device randomDevice;
+    std::mt19937 randomEngine(randomDevice());
+    std::uniform_real_distribution<double> distribution(0.0, 1.0);
 
     scaleW = ((maxScale - minScale) * distribution(randomEngine)) + minScale;
     scaleH = ((maxScale - minScale) * distribution(randomEngine)) + minScale;
