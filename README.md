@@ -1,2 +1,2 @@
 # OpenTLD
-Yet another semi naive realisation of TLD algorithm from Zdenek Kalal
+Yet another C++ semi naive realisation of the TLD algorithm from Zdenek Kalal.
