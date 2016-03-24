@@ -15,10 +15,10 @@ Feature::Feature(const double minScale)
 
 int Feature::test(const cv::Mat& frame, const cv::Rect& patch)
 {
-    int x = round(scaleX * patch.width) + patch.x;
-    int y = round(scaleY * patch.height) + patch.y;
-    int w = round(scaleW * patch.width);
-    int h = round(scaleH * patch.height);
+    int x = static_cast<int>(round(scaleX * patch.width)) + patch.x;
+    int y = static_cast<int>(round(scaleY * patch.height)) + patch.y;
+    int w = static_cast<int>(round(scaleW * patch.width));
+    int h = static_cast<int>(round(scaleH * patch.height));
     int left = sumRect(frame, cv::Rect(x, y, (w / 2), h));
     int right = sumRect(frame, cv::Rect((x + (w / 2)), y, (w / 2), h));
     int top = sumRect(frame, cv::Rect(x, y, w, (h / 2)));
