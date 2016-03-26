@@ -2,41 +2,38 @@
 
 Fern::Fern(const int featuresCount, const double minScale)
 {
-    for (int feature = 0; feature < featuresCount; feature++) {
-        features.push_back(new Feature(minScale));
+    for (int feature = 0; feature < featuresCount; ++feature)
+    {
+        features.push_back(std::make_shared<Feature>(minScale));
     }
     int leafsCount = pow(4, featuresCount);
     positives = std::vector<int>(leafsCount, 0);
     negatives = std::vector<int>(leafsCount, 0);
-    posteriors = std::vector<float>(leafsCount, 0.0);
+    posteriors = std::vector<double>(leafsCount, 0.0);
 }
 
-Fern::~Fern()
-{
-    for (uint feature = 0; feature < features.size(); feature++) {
-        delete features[feature];
-    }
-}
-
-void Fern::train(const cv::Mat& frame, const cv::Rect& patch,
-                 const int patchClass)
+void Fern::train(const cv::Mat& frame, const cv::Rect& patch, const int patchClass)
 {
     int leaf = getLeafIndex(frame, patch);
     std::lock_guard<std::mutex> lock(mutex);
-    if (patchClass == 0) {
-        negatives[leaf]++;
-    } else {
-        positives[leaf]++;
+    if (patchClass == 0)
+    {
+        ++negatives[leaf];
     }
-    if (positives.at(leaf) > 0) {
-        posteriors[leaf] = (float)positives.at(leaf) / (positives.at(leaf) + negatives.at(leaf));
+    else
+    {
+        ++positives[leaf];
+    }
+
+    if (positives.at(leaf) > 0)
+    {
+        posteriors[leaf] = static_cast<double>(positives.at(leaf)) / (positives.at(leaf) + negatives.at(leaf));
     }
 }
 
-float Fern::classify(const cv::Mat& frame, const cv::Rect& patch) const
+double Fern::classify(const cv::Mat& frame, const cv::Rect& patch) const
 {
-    float posterior = posteriors.at(getLeafIndex(frame, patch));
-    return posterior;
+    return posteriors.at(getLeafIndex(frame, patch));
 }
 
 int Fern::getLeafIndex(const cv::Mat& frame, const cv::Rect& patch) const
@@ -52,9 +49,9 @@ int Fern::getLeafIndex(const cv::Mat& frame, const cv::Rect& patch) const
     int patchH = std::min(patch.height, height - patchY);
 
     int leaf = 0;
-
-    for (uint feature = 0; feature < features.size(); feature++) {
-        leaf |= ((features.at(feature)->test( frame, cv::Rect(patchX, patchY, patchW, patchH)) << (2 * feature)));
+    for (auto feature: features)
+    {
+        leaf += (feature->test(frame, cv::Rect(patchX, patchY, patchW, patchH)) << (2 * feature));
     }
 
     return leaf;

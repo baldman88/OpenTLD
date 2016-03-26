@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <mutex>
+#include <memory>
 
 #include <opencv2/imgproc/imgproc.hpp>
 
@@ -12,13 +13,13 @@ class Fern
 {
 public:
     explicit Fern(const int featuresCount, const double minScale);
-    ~Fern();
+    ~Fern() = default;
     void train(const cv::Mat& frame, const cv::Rect& patch, const int patchClass);
-    float classify(const cv::Mat& frame, const cv::Rect& patch) const;
+    double classify(const cv::Mat& frame, const cv::Rect& patch) const;
     void reset();
 
 private:
-    std::vector<Feature*> features;
+    std::vector<std::shared_ptr<Feature>> features;
     std::vector<double> posteriors;
     std::vector<int> positives;
     std::vector<int> negatives;
