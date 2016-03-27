@@ -14,8 +14,8 @@ class Fern
 public:
     explicit Fern(const int featuresCount, const double minScale);
     ~Fern() = default;
-    void train(const cv::Mat& frame, const cv::Rect& patch, const int patchClass);
-    double classify(const cv::Mat& frame, const cv::Rect& patch) const;
+    void train(const cv::Mat& frame, const cv::Rect& patchRect, const bool isPositive);
+    double classify(const cv::Mat& frame, const cv::Rect& patchRect) const;
     void reset();
 
 private:
@@ -24,7 +24,7 @@ private:
     std::vector<int> positives;
     std::vector<int> negatives;
     std::mutex mutex;
-    int getLeafIndex(const cv::Mat& frame, const cv::Rect& patch) const;
+    int getLeafIndex(const cv::Mat& frame, const cv::Rect& patchRect) const;
 };
 
 #endif /* FERN_HPP */

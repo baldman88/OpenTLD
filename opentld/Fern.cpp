@@ -1,5 +1,6 @@
 #include "Fern.hpp"
 
+
 Fern::Fern(const int featuresCount, const double minScale)
 {
     for (int feature = 0; feature < featuresCount; ++feature)
@@ -12,11 +13,12 @@ Fern::Fern(const int featuresCount, const double minScale)
     posteriors = std::vector<double>(leafsCount, 0.0);
 }
 
-void Fern::train(const cv::Mat& frame, const cv::Rect& patch, const int patchClass)
+
+void Fern::train(const cv::Mat& frame, const cv::Rect& patchRect, const bool isPositive)
 {
-    int leaf = getLeafIndex(frame, patch);
+    int leaf = getLeafIndex(frame, patchRect);
     std::lock_guard<std::mutex> lock(mutex);
-    if (patchClass == 0)
+    if (isPositive == true)
     {
         ++negatives[leaf];
     }
@@ -31,31 +33,24 @@ void Fern::train(const cv::Mat& frame, const cv::Rect& patch, const int patchCla
     }
 }
 
-double Fern::classify(const cv::Mat& frame, const cv::Rect& patch) const
+
+double Fern::classify(const cv::Mat& frame, const cv::Rect& patchRect) const
 {
-    return posteriors.at(getLeafIndex(frame, patch));
+    return posteriors.at(getLeafIndex(frame, patchRect));
 }
 
-int Fern::getLeafIndex(const cv::Mat& frame, const cv::Rect& patch) const
+
+int Fern::getLeafIndex(const cv::Mat& frame, const cv::Rect& patchRect) const
 {
-    int width = frame.cols;
-    int height = frame.rows;
-
-    int gap = 2;
-    int patchX = std::max(std::min(patch.x, width - gap), 0);
-    int patchY = std::max(std::min(patch.y, height - gap), 0);
-
-    int patchW = std::min(patch.width, width - patchX);
-    int patchH = std::min(patch.height, height - patchY);
-
     int leaf = 0;
     for (auto feature: features)
     {
-        leaf += (feature->test(frame, cv::Rect(patchX, patchY, patchW, patchH)) << (2 * feature));
+        leaf += (feature->test(frame, patchRect) << (2 * feature));
     }
 
     return leaf;
 }
+
 
 void Fern::reset()
 {
