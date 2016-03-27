@@ -1,12 +1,11 @@
 #include "Tracker.hpp"
 
 
-Tracker::Tracker(Classifier* classifier)
-    : pyramidLevel(5)
+Tracker::Tracker(std::shared_ptr<Classifier>& classifier)
+    : pyramidLevel(5), classifier(classifier)
 {
     windowSize = cv::Size(4, 4);
     termCriteria = cv::TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 20, 0.03);
-    this->classifier = classifier;
 }
 
 

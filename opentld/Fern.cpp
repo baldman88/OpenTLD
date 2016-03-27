@@ -43,9 +43,11 @@ double Fern::classify(const cv::Mat& frame, const cv::Rect& patchRect) const
 int Fern::getLeafIndex(const cv::Mat& frame, const cv::Rect& patchRect) const
 {
     int leaf = 0;
+    int featureCounter = 0;
     for (auto feature: features)
     {
-        leaf += (feature->test(frame, patchRect) << (2 * feature));
+        leaf += (feature->test(frame, patchRect) << (2 * featureCounter));
+        featureCounter++;
     }
 
     return leaf;

@@ -6,8 +6,8 @@
 #include <functional>
 #include <memory>
 
-#include "Fern.hpp"
 #include "Concurrent.hpp"
+#include "Fern.hpp"
 
 
 class Classifier
