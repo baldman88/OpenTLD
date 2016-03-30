@@ -9,6 +9,7 @@
 #include "Classifier.hpp"
 #include "Patch.hpp"
 #include "Tracker.hpp"
+#include "Detector.hpp"
 
 
 class TLDTracker
@@ -21,9 +22,13 @@ public:
 
 private:
     std::shared_ptr<Classifier> classifier;
+    std::shared_ptr<Detector> detector;
     std::shared_ptr<Tracker> tracker;
     double confidence;
     bool isInitialised;
+    const double trackingConfidence;
+    const double reinitConfidence;
+    const double learningConfidence;
 };
 
 #endif /* TLDTRACKER_HPP */

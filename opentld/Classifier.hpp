@@ -19,6 +19,7 @@ public:
     void train(const cv::Mat& frame, const cv::Rect& patchRect, const bool isPositive);
     double classify(const cv::Mat& frame, const cv::Rect& patchRect) const;
     double getRectsOverlap(const cv::Rect& first, const cv::Rect& second) const;
+    cv::Point2f getRectCenter(const cv::Rect& rect) const;
     void trainPositive(const cv::Mat& frame, const cv::Rect& patchRect);
     const double minOverlap;
 
@@ -26,7 +27,6 @@ private:
     std::vector<std::shared_ptr<Fern>> ferns;
     void trainNegative(const cv::Mat& frame, const cv::Rect& patchRect);
     cv::Mat transform(const cv::Mat& frame, const cv::Point2f& center, const double angle) const;
-    cv::Point2f getRectCenter(const cv::Rect& rect) const;
 };
 
 #endif /* CLASSIFIER_HPP */
