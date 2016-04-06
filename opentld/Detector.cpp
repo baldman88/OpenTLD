@@ -1,4 +1,5 @@
 #include "Detector.hpp"
+#include <iostream>
 
 
 Detector::Detector(std::shared_ptr<Classifier>& classifier)
@@ -42,13 +43,12 @@ std::vector<Patch> Detector::detect(const cv::Mat& frame, const cv::Rect& patchR
         std::mt19937 randomEngine(randomDevice());
         for (double scale = minScale; scale <= maxScale; scale += scaleStep)
         {
-            int currentWidth = scale * width;
+            int currentWidth = static_cast<int>(round(scale * width));
             if (currentWidth >= minSideSize)
             {
-                std::uniform_real_distribution<double> distribution(0.0, static_cast<double>(frameWidth - (currentWidth * 3)));
                 int xMin;
                 int xMax;
-                int xStep = ceil(currentWidth / stepDevider);
+                int xStep = static_cast<int>(ceil(currentWidth / stepDevider));
                 if (patchRect.area() > 0)
                 {
                     int currenterX = patchRectCenter.x - (currentWidth / 2);
@@ -59,6 +59,7 @@ std::vector<Patch> Detector::detect(const cv::Mat& frame, const cv::Rect& patchR
                 {
                     if ((frameWidth / 3) > currentWidth)
                     {
+                        std::uniform_int_distribution<int> distribution(0, (frameWidth - (currentWidth * 3)));
                         xMin = distribution(randomEngine);
                         xMax = xMin + (currentWidth * 2);
                     }
@@ -70,13 +71,12 @@ std::vector<Patch> Detector::detect(const cv::Mat& frame, const cv::Rect& patchR
                 }
                 for (int x = xMin; x < xMax; x += xStep)
                 {
-                    int currentHeight = scale * height;
+                    int currentHeight = static_cast<int>(round(scale * height));
                     if (currentHeight >= minSideSize)
                     {
-                        std::uniform_real_distribution<double> distribution(0.0, static_cast<double>(frameWidth - (currentHeight * 3)));
                         int yMin;
                         int yMax;
-                        int yStep = ceil(currentHeight / stepDevider);
+                        int yStep = static_cast<int>(ceil(currentHeight / stepDevider));
                         if (patchRect.area() > 0)
                         {
                             int currenterY = patchRectCenter.y - (currentHeight / 2);
@@ -87,6 +87,7 @@ std::vector<Patch> Detector::detect(const cv::Mat& frame, const cv::Rect& patchR
                         {
                             if ((frameHeight / 3) > currentHeight)
                             {
+                                std::uniform_int_distribution<int> distribution(0, (frameHeight - (currentHeight * 3)));
                                 yMin = distribution(randomEngine);
                                 yMax = yMin + (currentHeight * 2);
                             }
