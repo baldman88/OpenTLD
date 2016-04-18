@@ -18,6 +18,10 @@ void Detector::init(const cv::Mat& frame, const cv::Rect& patchRect)
 
 std::vector<Patch> Detector::detect(const cv::Mat& frame, const cv::Rect& patchRect) const
 {
+#ifdef DEBUG
+    std::cout << "patchRect(" << patchRect.x << ", " << patchRect.y << ", "
+            << patchRect.width << ", " << patchRect.height << ")" << std::endl;
+#endif
     std::vector<Patch> patches;
     int width;
     int height;
@@ -99,6 +103,10 @@ std::vector<Patch> Detector::detect(const cv::Mat& frame, const cv::Rect& patchR
                         }
                         for (int y = yMin; y < yMax; y += yStep)
                         {
+                            if (((x + currentWidth) >= 640) || ((y + currentHeight) >= 480))
+                            {
+                                std::cout << "We have a problem!" << std::endl;
+                            }
                             testRects.push_back(cv::Rect(x, y, currentWidth, currentHeight));
                         }
                     }

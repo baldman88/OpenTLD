@@ -43,6 +43,9 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
 int main(int argc, char* argv[])
 {
     cv::VideoCapture capture;
+#ifdef DEBUG
+    std::cout << "This is debug!" << std::endl;
+#endif
     if (capture.open(1) == false)
     {
         capture.open(0);
