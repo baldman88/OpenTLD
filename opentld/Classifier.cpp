@@ -14,6 +14,7 @@ Classifier::Classifier(const int fernsCount, const int featuresCount, const doub
 
 void Classifier::train(const cv::Mat& frame, const cv::Rect& patchRect, const bool isPositive)
 {
+//    std::cout << patchRect.x << ", " << patchRect.y << ", " << patchRect.width << ", " << patchRect.height << std::endl;
     for (auto fern: ferns)
     {
         fern->train(frame, patchRect, isPositive);
@@ -43,7 +44,7 @@ void Classifier::trainNegative(const cv::Mat& frame, const cv::Rect& patchRect)
                 cv::Rect negativePatchRect(x, y, currentWidth, currentHeight);
                 if (getRectsOverlap(patchRect, negativePatchRect) < minOverlap)
                 {
-                    train(frame, negativePatchRect, 0);
+                    train(frame, negativePatchRect, false);
                 }
             }
         }
@@ -105,28 +106,28 @@ void Classifier::trainNegative(const cv::Mat& frame, const cv::Rect& patchRect)
 void Classifier::trainPositive(const cv::Mat& frame, const cv::Rect& patchRect)
 {
     cv::Point2f patchRectCenter = getRectCenter(patchRect);
-    for (double scale = 0.9; scale <= 1.1; scale += 0.1)
+    for (double scale = 0.95; scale <= 1.05; scale += 0.05)
     {
         cv::Size warpSize(static_cast<int>(std::ceil(patchRect.width * scale + 6)),
                           static_cast<int>(std::ceil(patchRect.height * scale + 6)));
         if (((patchRectCenter.x - (warpSize.width / 2)) >= 0)
-                && ((patchRectCenter.x + (warpSize.height / 2)) < frame.cols)
-                && ((patchRectCenter.y - (warpSize.height / 2)) >= 0)
-                && ((patchRectCenter.y + (warpSize.height / 2)) < frame.rows))
+             && ((patchRectCenter.x + (warpSize.width / 2)) < frame.cols)
+             && ((patchRectCenter.y - (warpSize.height / 2)) >= 0)
+             && ((patchRectCenter.y + (warpSize.height / 2)) < frame.rows))
         {
             double maxAngle;
             cv::Rect warpFrameRect;
-            for (maxAngle = 1.0; maxAngle < 10.0; maxAngle += 1.0)
+            for (maxAngle = 10.0; maxAngle >= 0.0; maxAngle -= 1.0)
             {
                 warpFrameRect = cv::RotatedRect(patchRectCenter, warpSize, maxAngle).boundingRect();
-                if ((warpFrameRect.tl().x < 0) || (warpFrameRect.tl().y < 0)
-                        || (warpFrameRect.br().x >= frame.cols) || (warpFrameRect.br().y >= frame.rows))
+                if ((warpFrameRect.tl().x >= 0)
+                    && (warpFrameRect.tl().y >= 0)
+                    && (warpFrameRect.br().x < frame.cols)
+                    && (warpFrameRect.br().y < frame.rows))
                 {
                     break;
                 }
             }
-            maxAngle -= 1.0;
-            warpFrameRect = cv::RotatedRect(patchRectCenter, warpSize, maxAngle).boundingRect();
             cv::Mat warpFrame = frame(warpFrameRect);
             cv::Rect warpPatchRect((patchRect.x - warpFrameRect.x), (patchRect.y - warpFrameRect.y), patchRect.width, patchRect.height);
             std::vector<double> angles;
@@ -147,8 +148,8 @@ void Classifier::trainPositive(const cv::Mat& frame, const cv::Rect& patchRect)
                         int y = warpPatchRectCenter.y - (warpSize.height / 2) + yOffset;
                         cv::Rect testPatchRect(x, y, warpSize.width, warpSize.height);
                         if ((testPatchRect.tl().x >= 0) && (testPatchRect.tl().y >= 0)
-                                && (testPatchRect.br().x < warpFrameRect.width)
-                                && (testPatchRect.br().y < warpFrameRect.height))
+                            && (testPatchRect.br().x < warpFrameRect.width)
+                            && (testPatchRect.br().y < warpFrameRect.height))
                         {
                             positivePatches.push_back(cv::Rect(x, y, warpSize.width, warpSize.height));
                         }
@@ -157,7 +158,7 @@ void Classifier::trainPositive(const cv::Mat& frame, const cv::Rect& patchRect)
             for (size_t i = 0; i < warpFrames.size(); ++i)
             {
                 concurrent::blockingMap(positivePatches.begin(), positivePatches.end(),
-                                        std::bind(&Classifier::train, this, warpFrames.at(i), std::placeholders::_1, 1));
+                                        std::bind(&Classifier::train, this, warpFrames.at(i), std::placeholders::_1, true));
             }
         }
     }
@@ -183,7 +184,7 @@ void Classifier::init(const cv::Mat& frame, const cv::Rect& patchRect)
     }
     cv::Mat integralFrame;
     cv::integral(frame, integralFrame);
-    train(integralFrame, patchRect, 1);
+    train(integralFrame, patchRect, true);
     trainPositive(frame, patchRect);
     trainNegative(integralFrame, patchRect);
 }

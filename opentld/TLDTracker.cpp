@@ -55,8 +55,8 @@ cv::Rect TLDTracker::getTargetRect(const cv::Mat& frameRGB, const cv::Rect& targ
             if ((trackedPatch.confidence < reinitConfidence) && (maxDetectedConfidence >= reinitConfidence))
             {
                 trackedPatch = detectedPatches.at(maxDetectedConfidenceIndex);
-    //            detector->setVarianceThreshold(frame, trackedPatch.rect);
-                detector->setPatchRectSize(trackedPatch.rect);
+//                detector->setVarianceThreshold(frame, trackedPatch.rect);
+//                detector->setPatchRectSize(trackedPatch.rect);
             }
             if (targetRect.area() > 0)
             {
