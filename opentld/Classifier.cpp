@@ -1,4 +1,5 @@
 #include "Classifier.hpp"
+#include <iostream>
 
 
 Classifier::Classifier(const int fernsCount, const int featuresCount, const double minFeatureScale)
@@ -207,6 +208,7 @@ double Classifier::getRectsOverlap(const cv::Rect& first, const cv::Rect& second
     {
         overlap = static_cast<double>(overlapRect.area()) / (first.area() + second.area() - overlapRect.area());
     }
+//    std::cout << "Overlap = " << overlap << std::endl;
     return overlap;
 }
 

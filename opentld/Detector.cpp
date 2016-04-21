@@ -13,6 +13,7 @@ void Detector::init(const cv::Mat& frame, const cv::Rect& patchRect)
     frameHeight = frame.rows;
     setPatchRectSize(patchRect);
     setVarianceThreshold(frame, patchRect);
+    std::cout << "varianceThreshold = " << varianceThreshold << std::endl;
 }
 
 
@@ -115,6 +116,7 @@ std::vector<Patch> Detector::detect(const cv::Mat& frame, const cv::Rect& patchR
         }
         if (testRects.size() > 0)
         {
+            std::cout << "Detector, testRects count (before) = " << testRects.size() << std::endl;
             cv::Mat integralFrame;
             cv::Mat squareIntegralFrame;
             cv::integral(frame, integralFrame, squareIntegralFrame);
@@ -122,17 +124,20 @@ std::vector<Patch> Detector::detect(const cv::Mat& frame, const cv::Rect& patchR
                                                   std::bind(&Detector::checkPatchVariace, this,
                                                             integralFrame, squareIntegralFrame, std::placeholders::_1));
             testRects.erase(end, testRects.end());
+            std::cout << "Detector, testRects count (after) = " << testRects.size() << std::endl;
             patches.resize(testRects.size());
             concurrent::blockingMapped(testRects.begin(), testRects.end(), patches.begin(),
                                        std::bind(&Detector::getPatch, this, std::placeholders::_1, integralFrame, patchRect));
         }
     }
+    std::cout << "Detector, patches count (before) = " << patches.size() << std::endl;
     if (patches.size() > 0)
     {
         auto end = concurrent::blockingFilter(patches.begin(), patches.end(),
                                               std::bind(&Detector::checkPatchConformity, this, std::placeholders::_1));
         patches.erase(end, patches.end());
     }
+    std::cout << "Detector, patches (after) count = " << patches.size() << std::endl;
     return patches;
 }
 
@@ -153,6 +158,7 @@ double Detector::getPatchVariance(const cv::Mat& integralFrame, const cv::Mat& s
                           squareIntegralFrame.at<float>(cv::Point(patchRect.x, patchRect.y + patchRect.height))) / area;
         variance = deviance - (mean * mean);
     }
+//    std::cout << "Variance = " << variance << std::endl;
     return variance;
 }
 
@@ -160,10 +166,10 @@ double Detector::getPatchVariance(const cv::Mat& integralFrame, const cv::Mat& s
 Patch Detector::getPatch(const cv::Rect& testRect, const cv::Mat& frame, const cv::Rect& patchRect) const
 {
     double confidence = classifier->classify(frame, testRect);
-    int overlap = 0;
-    if ((patchRect.area() != 0) && (classifier->getRectsOverlap(patchRect, testRect) > classifier->minOverlap))
+    bool overlap = false;
+    if ((patchRect.area() > 0) && (classifier->getRectsOverlap(patchRect, testRect) > classifier->minOverlap))
     {
-        overlap = 1;
+        overlap = true;
     }
     return Patch(testRect, confidence, overlap);
 }
@@ -171,8 +177,9 @@ Patch Detector::getPatch(const cv::Rect& testRect, const cv::Mat& frame, const c
 
 bool Detector::checkPatchConformity(const Patch& patch) const
 {
+    std::cout << "confidence = " << patch.confidence << "; isOverlaps = " << patch.isOverlaps << std::endl;
     bool result = false;
-    if ((patch.confidence > 0.6f) || (patch.isOverlaps == true))
+    if ((patch.confidence > 0.6f) && (patch.isOverlaps == true))
     {
         result = true;
     }

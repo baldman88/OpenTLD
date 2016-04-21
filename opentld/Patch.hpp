@@ -11,7 +11,7 @@ struct Patch
     Patch& operator=(const Patch& other);
     cv::Rect rect;
     double confidence;
-    int isOverlaps;
+    bool isOverlaps;
 };
 
 #endif /* PATCH_HPP */
