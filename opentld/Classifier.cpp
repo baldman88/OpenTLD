@@ -24,6 +24,7 @@ void Classifier::train(const cv::Mat& frame, const cv::Rect& patchRect, const bo
 
 void Classifier::trainNegative(const cv::Mat& frame, const cv::Rect& patchRect)
 {
+//    std::cout << "Classifier::trainNegative(), starts here" << std::endl;
     double minScale = 0.5;
     double maxScale = 1.5;
     double scaleStep = 0.25;
@@ -49,6 +50,7 @@ void Classifier::trainNegative(const cv::Mat& frame, const cv::Rect& patchRect)
             }
         }
     }
+//    std::cout << "Classifier::trainNegative(), ends here" << std::endl;
 }
 
 
@@ -209,7 +211,10 @@ double Classifier::getRectsOverlap(const cv::Rect& first, const cv::Rect& second
     {
         overlap = static_cast<double>(overlapRect.area()) / (first.area() + second.area() - overlapRect.area());
     }
-//    std::cout << "Overlap = " << overlap << std::endl;
+//    std::cout << "(" << first.x << ", " << first.y << ", " << first.width << ", " << first.height << "); ("
+//            << second.x << ", " << second.y << ", " << second.width << ", " << second.height << "); ("
+//            << overlapRect.x << ", " << overlapRect.y << ", " << overlapRect.width << ", " << overlapRect.height
+//            << "); overlap = " << overlap << std::endl;
     return overlap;
 }
 

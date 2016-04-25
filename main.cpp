@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include <opencv2/highgui.hpp>
+#include <opencv2/videoio.hpp>
 
 #include "opentld/TLDTracker.hpp"
 
@@ -35,7 +36,14 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
         isSelectionActive = false;
         roi.width = x - roi.x;
         roi.height = y - roi.y;
-        isTargetSelected = true;
+        if ((roi.width < 20) || (roi.height < 20))
+        {
+            roi = cv::Rect(0, 0, 0, 0);
+        }
+        else
+        {
+            isTargetSelected = true;
+        }
     }
 }
 

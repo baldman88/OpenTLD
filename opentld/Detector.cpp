@@ -14,6 +14,8 @@ void Detector::init(const cv::Mat& frame, const cv::Rect& patchRect)
     setPatchRectSize(patchRect);
     setVarianceThreshold(frame, patchRect);
     std::cout << "varianceThreshold = " << varianceThreshold << std::endl;
+    std::cout << "patchRect = (" << patchRect.x << ", " << patchRect.y << ", "
+            << patchRect.width << ", " << patchRect.height << ")" << std::endl;
 }
 
 
@@ -42,7 +44,7 @@ std::vector<Patch> Detector::detect(const cv::Mat& frame, const cv::Rect& patchR
     if ((width < frame.cols) && (height < frame.rows))
     {
         std::vector<cv::Rect> testRects;
-        int stepDevider = 20;
+        double stepDevider = 50.0;
         cv::Point patchRectCenter = classifier->getRectCenter(patchRect);
         std::random_device randomDevice;
         std::mt19937 randomEngine(randomDevice());
@@ -53,7 +55,14 @@ std::vector<Patch> Detector::detect(const cv::Mat& frame, const cv::Rect& patchR
             {
                 int xMin;
                 int xMax;
-                int xStep = static_cast<int>(ceil(currentWidth / stepDevider));
+//                int xStep = static_cast<int>(ceil(currentWidth / stepDevider));
+                int xStep = static_cast<int>(round(currentWidth / stepDevider));
+                if (xStep == 0)
+                {
+                    xStep = 1;
+                }
+//                int xStep = 1;
+//                std::cout << "xStep = " << xStep << std::endl;
                 if (patchRect.area() > 0)
                 {
                     int currenterX = patchRectCenter.x - (currentWidth / 2);
@@ -64,8 +73,8 @@ std::vector<Patch> Detector::detect(const cv::Mat& frame, const cv::Rect& patchR
                 {
                     if ((frameWidth / 3) > currentWidth)
                     {
-                        std::uniform_int_distribution<int> distribution(0, (frameWidth - (currentWidth * 3)));
-                        xMin = distribution(randomEngine);
+                        std::uniform_int_distribution<int> distributionX(0, (frameWidth - (currentWidth * 3)));
+                        xMin = distributionX(randomEngine);
                         xMax = xMin + (currentWidth * 2);
                     }
                     else
@@ -81,7 +90,14 @@ std::vector<Patch> Detector::detect(const cv::Mat& frame, const cv::Rect& patchR
                     {
                         int yMin;
                         int yMax;
-                        int yStep = static_cast<int>(ceil(currentHeight / stepDevider));
+//                        int yStep = static_cast<int>(ceil(currentHeight / stepDevider));
+                        int yStep = static_cast<int>(round(currentHeight / stepDevider));
+                        if (yStep == 0)
+                        {
+                            yStep = 1;
+                        }
+//                        int yStep = 1;
+//                        std::cout << "yStep = " << yStep << std::endl;
                         if (patchRect.area() > 0)
                         {
                             int currenterY = patchRectCenter.y - (currentHeight / 2);
@@ -92,8 +108,8 @@ std::vector<Patch> Detector::detect(const cv::Mat& frame, const cv::Rect& patchR
                         {
                             if ((frameHeight / 3) > currentHeight)
                             {
-                                std::uniform_int_distribution<int> distribution(0, (frameHeight - (currentHeight * 3)));
-                                yMin = distribution(randomEngine);
+                                std::uniform_int_distribution<int> distributionY(0, (frameHeight - (currentHeight * 3)));
+                                yMin = distributionY(randomEngine);
                                 yMax = yMin + (currentHeight * 2);
                             }
                             else
@@ -102,6 +118,9 @@ std::vector<Patch> Detector::detect(const cv::Mat& frame, const cv::Rect& patchR
                                 yMax = frameHeight - currentHeight;
                             }
                         }
+//                        std::cout << "patchRectWidth = " << patchRectWidth << "; patchRectHeight = " << patchRectHeight
+//                                << "; xMin = " << xMin << "; xMax = " << xMax
+//                                << "; yMin = " << yMin << "; yMax = " << yMax << std::endl;
                         for (int y = yMin; y < yMax; y += yStep)
                         {
                             if (((x + currentWidth) >= 640) || ((y + currentHeight) >= 480))
@@ -152,11 +171,12 @@ double Detector::getPatchVariance(const cv::Mat& integralFrame, const cv::Mat& s
                       + integralFrame.at<int>(cv::Point(patchRect.x + patchRect.width, patchRect.y + patchRect.height))
                       - integralFrame.at<int>(cv::Point(patchRect.x + patchRect.width, patchRect.y))
                       - integralFrame.at<int>(cv::Point(patchRect.x, patchRect.y + patchRect.height))) / area;
-        double deviance = (squareIntegralFrame.at<float>(cv::Point(patchRect.x, patchRect.y))
-                          + squareIntegralFrame.at<float>(cv::Point(patchRect.x + patchRect.width, patchRect.y + patchRect.height))
-                          - squareIntegralFrame.at<float>(cv::Point(patchRect.x + patchRect.width, patchRect.y))
-                          - squareIntegralFrame.at<float>(cv::Point(patchRect.x, patchRect.y + patchRect.height))) / area;
+        double deviance = (squareIntegralFrame.at<double>(cv::Point(patchRect.x, patchRect.y))
+                          + squareIntegralFrame.at<double>(cv::Point(patchRect.x + patchRect.width, patchRect.y + patchRect.height))
+                          - squareIntegralFrame.at<double>(cv::Point(patchRect.x + patchRect.width, patchRect.y))
+                          - squareIntegralFrame.at<double>(cv::Point(patchRect.x, patchRect.y + patchRect.height))) / area;
         variance = deviance - (mean * mean);
+//        std::cout << "d = " << deviance << "; m^2 = " << (mean * mean) << std::endl;
     }
 //    std::cout << "Variance = " << variance << std::endl;
     return variance;
@@ -203,7 +223,7 @@ void Detector::setVarianceThreshold(const cv::Mat& frame, const cv::Rect& patchR
     cv::Mat integralFrame;
     cv::Mat squareIntegralFrame;
     cv::integral(frame, integralFrame, squareIntegralFrame);
-    varianceThreshold = getPatchVariance(integralFrame, squareIntegralFrame, patchRect);
+    varianceThreshold = getPatchVariance(integralFrame, squareIntegralFrame, patchRect) / 2.0;
 }
 
 

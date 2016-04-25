@@ -1,4 +1,5 @@
 #include "Feature.hpp"
+#include <iostream>
 
 
 Feature::Feature(const double minScale)
@@ -12,6 +13,7 @@ Feature::Feature(const double minScale)
     /* scaleX and scaleY in range 0.0 .. (1.0 - minScale) */
     scaleX = (1.0 - scaleW) * distribution(randomEngine);
     scaleY = (1.0 - scaleH) * distribution(randomEngine);
+//    std::cout << "sX = " << scaleX << "; sY = " << scaleY << "; sW = " << scaleW << "; sH = " << scaleH << std::endl;
 }
 
 
