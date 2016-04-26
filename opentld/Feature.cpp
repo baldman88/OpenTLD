@@ -2,14 +2,14 @@
 #include <iostream>
 
 
-Feature::Feature(const double minScale)
+Feature::Feature(const double minScale, const double maxScale)
 {
     std::random_device randomDevice;
     std::mt19937 randomEngine(randomDevice());
     std::uniform_real_distribution<double> distribution(0.0, 1.0);
-    /* scaleW and scaleH in range minScale .. 1.0 */
-    scaleW = ((1.0 - minScale) * distribution(randomEngine)) + minScale;
-    scaleH = ((1.0 - minScale) * distribution(randomEngine)) + minScale;
+    /* scaleW and scaleH in range minScale .. maxScale */
+    scaleW = ((maxScale - minScale) * distribution(randomEngine)) + minScale;
+    scaleH = ((maxScale - minScale) * distribution(randomEngine)) + minScale;
     /* scaleX and scaleY in range 0.0 .. (1.0 - minScale) */
     scaleX = (1.0 - scaleW) * distribution(randomEngine);
     scaleY = (1.0 - scaleH) * distribution(randomEngine);

@@ -1,11 +1,11 @@
 #include "Fern.hpp"
 
 
-Fern::Fern(const int featuresCount, const double minScale)
+Fern::Fern(const int featuresCount, const double minScale, const double maxScale)
 {
     for (int feature = 0; feature < featuresCount; ++feature)
     {
-        features.push_back(std::make_shared<Feature>(minScale));
+        features.push_back(std::make_shared<Feature>(minScale, maxScale));
     }
     int leafsCount = pow(4, featuresCount);
     positives = std::vector<int>(leafsCount, 0);

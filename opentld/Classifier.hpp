@@ -13,7 +13,7 @@
 class Classifier
 {
 public:
-    explicit Classifier(const int fernsCount, const int featuresCount, const double minFeatureScale);
+    explicit Classifier(const int fernsCount, const int featuresCount, const double minFeatureScale, const double maxFeatureScale);
     ~Classifier() = default;
     void init(const cv::Mat& frame, const cv::Rect& patchRect);
     void train(const cv::Mat& frame, const cv::Rect& patchRect, const bool isPositive);

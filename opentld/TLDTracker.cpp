@@ -1,11 +1,11 @@
 #include "TLDTracker.hpp"
 
 
-TLDTracker::TLDTracker(const int ferns, const int nodes, const double minFutureScale)
+TLDTracker::TLDTracker(const int ferns, const int nodes, const double minFeatureScale, const double maxFeatureScale)
     : confidence(1.0), isInitialised(false), trackingConfidence(0.75),
       reinitConfidence(0.75), learningConfidence(0.85)
 {
-    classifier = std::make_shared<Classifier>(ferns, nodes, minFutureScale);
+    classifier = std::make_shared<Classifier>(ferns, nodes, minFeatureScale, maxFeatureScale);
     detector = std::make_shared<Detector>(classifier);
     tracker = std::make_shared<Tracker>(classifier);
 }

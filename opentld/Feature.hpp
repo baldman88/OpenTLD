@@ -8,7 +8,7 @@
 class Feature
 {
 public:
-    Feature(const double minScale);
+    Feature(const double minScale, const double maxScale);
     int test(const cv::Mat& frame, const cv::Rect& patchRect);
 
 private:

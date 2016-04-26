@@ -2,12 +2,12 @@
 #include <iostream>
 
 
-Classifier::Classifier(const int fernsCount, const int featuresCount, const double minFeatureScale)
+Classifier::Classifier(const int fernsCount, const int featuresCount, const double minFeatureScale, const double maxFeatureScale)
     : minOverlap(0.6)
 {
     for (int fern = 0; fern < fernsCount; ++fern)
     {
-        ferns.push_back(std::make_shared<Fern>(featuresCount, minFeatureScale));
+        ferns.push_back(std::make_shared<Fern>(featuresCount, minFeatureScale, maxFeatureScale));
     }
 }
 
