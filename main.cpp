@@ -1,4 +1,5 @@
 #include <iostream>
+#include <chrono>
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/videoio.hpp>
@@ -67,11 +68,15 @@ int main(int argc, char* argv[])
         capture.read(frame);
         if (isTargetSelected == true)
         {
+            auto begin = std::chrono::high_resolution_clock::now();
             roi = tracker.getTargetRect(frame, roi);
+            auto end = std::chrono::high_resolution_clock::now();
+            std::cout << "Time elapsed = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << std::endl;
         }
         cv::rectangle(frame, roi, cv::Scalar(0, 255, 0));
         cv::imshow("Output", frame);
         key = cv::waitKey(1);
     }
+    capture.release();
     return 0;
 }
