@@ -11,7 +11,7 @@ TLDTracker::TLDTracker(const int ferns, const int nodes, const double minFeature
 }
 
 
-cv::Rect TLDTracker::getTargetRect(const cv::Mat& frameRGB, const cv::Rect& targetRect)
+cv::Rect TLDTracker::getTargetRect(const cv::Mat &frameRGB, const cv::Rect &targetRect)
 {
     cv::Mat frame;
     cv::cvtColor(frameRGB, frame, cv::COLOR_RGB2GRAY);
@@ -31,11 +31,11 @@ cv::Rect TLDTracker::getTargetRect(const cv::Mat& frameRGB, const cv::Rect& targ
         if ((confidence > trackingConfidence) && (targetRect.area() > 0))
         {
             trackedPatch = tracker->track(frame, targetRect);
-            detectedPatches = detector->detect(frame, trackedPatch.rect);
+            detector->detect(frame, trackedPatch.rect, detectedPatches);
         }
         else
         {
-            detectedPatches = detector->detect(frame, cv::Rect(0, 0, 0, 0));
+            detector->detect(frame, cv::Rect(0, 0, 0, 0), detectedPatches);
         }
         float maxDetectedConfidence = 0.0f;
         int maxDetectedConfidenceIndex = -1;

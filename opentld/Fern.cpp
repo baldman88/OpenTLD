@@ -14,8 +14,9 @@ Fern::Fern(const int featuresCount, const double minScale, const double maxScale
 }
 
 
-void Fern::train(const cv::Mat& frame, const cv::Rect& patchRect, const bool isPositive)
+void Fern::train(const cv::Mat &frame, const cv::Rect &patchRect, const bool isPositive)
 {
+    std::cout << "In Fern::train ..." << std::endl;
     int leaf = getLeafIndex(frame, patchRect);
     std::lock_guard<std::mutex> lock(mutex);
     if (isPositive == true)
@@ -34,13 +35,13 @@ void Fern::train(const cv::Mat& frame, const cv::Rect& patchRect, const bool isP
 }
 
 
-double Fern::classify(const cv::Mat& frame, const cv::Rect& patchRect) const
+double Fern::classify(const cv::Mat &frame, const cv::Rect &patchRect) const
 {
     return posteriors.at(getLeafIndex(frame, patchRect));
 }
 
 
-int Fern::getLeafIndex(const cv::Mat& frame, const cv::Rect& patchRect) const
+int Fern::getLeafIndex(const cv::Mat &frame, const cv::Rect &patchRect) const
 {
     int leaf = 0;
     int featureCounter = 0;

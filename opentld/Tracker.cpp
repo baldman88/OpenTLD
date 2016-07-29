@@ -1,7 +1,7 @@
 #include "Tracker.hpp"
 
 
-Tracker::Tracker(std::shared_ptr<Classifier>& classifier)
+Tracker::Tracker(std::shared_ptr<Classifier> &classifier)
     : pyramidLevel(5), classifier(classifier)
 {
     windowSize = cv::Size(4, 4);
@@ -9,14 +9,14 @@ Tracker::Tracker(std::shared_ptr<Classifier>& classifier)
 }
 
 
-void Tracker::init(const cv::Mat& frame)
+void Tracker::init(const cv::Mat &frame)
 {
     prevFrame = frame.clone();
     cv::buildOpticalFlowPyramid(prevFrame, prevFramePyr, windowSize, pyramidLevel, true);
 }
 
 
-Patch Tracker::track(const cv::Mat& frame, const cv::Rect& patchRect)
+Patch Tracker::track(const cv::Mat &frame, const cv::Rect &patchRect)
 {
     nextFrame = frame.clone();
     cv::buildOpticalFlowPyramid(nextFrame, nextFramePyr, windowSize, pyramidLevel, true);
@@ -91,7 +91,7 @@ Patch Tracker::track(const cv::Mat& frame, const cv::Rect& patchRect)
 }
 
 
-float Tracker::getMedian(const std::vector<float>& array) const
+float Tracker::getMedian(const std::vector<float> &array) const
 {
     float median;
     std::vector<float> tmp(array);
@@ -124,8 +124,8 @@ float Tracker::getMedian(const std::vector<float>& array) const
 }
 
 
-std::vector<float> Tracker::getEuclideanDistance(const std::vector<cv::Point2f>& forwardPoints,
-                                                 const std::vector<cv::Point2f>& backwardPoints) const
+std::vector<float> Tracker::getEuclideanDistance(const std::vector<cv::Point2f> &forwardPoints,
+                                                 const std::vector<cv::Point2f> &backwardPoints) const
 {
     std::vector<float> confidence;
     for (uint i = 0; i < forwardPoints.size(); i++)
@@ -139,8 +139,8 @@ std::vector<float> Tracker::getEuclideanDistance(const std::vector<cv::Point2f>&
 }
 
 
-std::vector<float> Tracker::getNormCrossCorrelation(const std::vector<cv::Point2f>& prevPoints,
-                                                    const std::vector<cv::Point2f>& nextPoints) const
+std::vector<float> Tracker::getNormCrossCorrelation(const std::vector<cv::Point2f> &prevPoints,
+                                                    const std::vector<cv::Point2f> &nextPoints) const
 {
     cv::Mat prevPatch;
     cv::Mat nextPatch;
@@ -157,7 +157,7 @@ std::vector<float> Tracker::getNormCrossCorrelation(const std::vector<cv::Point2
 }
 
 
-std::vector<cv::Point2f> Tracker::getGridPoints(const cv::Rect& rect) const
+std::vector<cv::Point2f> Tracker::getGridPoints(const cv::Rect &rect) const
 {
     cv::Rect localRect;
     localRect.x = rect.x + (PATCH_SIZE / 2);
@@ -180,8 +180,8 @@ std::vector<cv::Point2f> Tracker::getGridPoints(const cv::Rect& rect) const
 }
 
 
-cv::Rect Tracker::getBoundedRect(const cv::Rect& rect, const std::vector<cv::Point2f>& prevPoints,
-                                 const std::vector<cv::Point2f>& nextPoints) const
+cv::Rect Tracker::getBoundedRect(const cv::Rect &rect, const std::vector<cv::Point2f> &prevPoints,
+                                 const std::vector<cv::Point2f> &nextPoints) const
 {
     std::vector<float> diffX;
     std::vector<float> diffY;

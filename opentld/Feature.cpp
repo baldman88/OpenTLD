@@ -17,7 +17,7 @@ Feature::Feature(const double minScale, const double maxScale)
 }
 
 
-int Feature::test(const cv::Mat& frame, const cv::Rect& patchRect)
+int Feature::test(const cv::Mat &frame, const cv::Rect &patchRect)
 {
     int x = static_cast<int>(round(scaleX * patchRect.width)) + patchRect.x;
     int y = static_cast<int>(round(scaleY * patchRect.height)) + patchRect.y;
@@ -31,7 +31,7 @@ int Feature::test(const cv::Mat& frame, const cv::Rect& patchRect)
 }
 
 
-int Feature::sumRect(const cv::Mat& frame, const cv::Rect& patchRect)
+int Feature::sumRect(const cv::Mat &frame, const cv::Rect &patchRect)
 {
     return (frame.at<int>(cv::Point(patchRect.x + patchRect.width, patchRect.y + patchRect.height))
             + frame.at<int>(cv::Point(patchRect.x, patchRect.y))
