@@ -5,6 +5,7 @@
 #include <mutex>
 #include <memory>
 #include <iostream>
+#include <atomic>
 
 #include <opencv2/imgproc/imgproc.hpp>
 
@@ -20,10 +21,11 @@ public:
     void reset();
 
 private:
+    int leafsCount;
     std::vector<std::shared_ptr<Feature>> features;
-    std::vector<double> posteriors;
-    std::vector<int> positives;
-    std::vector<int> negatives;
+    std::vector<std::atomic<double>> posteriors;
+    std::vector<std::atomic<int>> positives;
+    std::vector<std::atomic<int>> negatives;
     std::mutex mutex;
     int getLeafIndex(const cv::Mat &frame, const cv::Rect &patchRect) const;
 };
