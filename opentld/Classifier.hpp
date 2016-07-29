@@ -5,6 +5,7 @@
 #include <cmath>
 #include <functional>
 #include <memory>
+#include <chrono>
 
 #include "Concurrent.hpp"
 #include "Fern.hpp"

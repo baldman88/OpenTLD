@@ -59,6 +59,7 @@ int main(int argc, char* argv[])
     {
         capture.open(0);
     }
+    std::cout << capture.get(CV_CAP_PROP_FPS) << std::endl;
     cv::namedWindow("Output");
     cv::setMouseCallback("Output", mouseHandler);
     char key = 0;
@@ -75,7 +76,7 @@ int main(int argc, char* argv[])
         }
         cv::rectangle(frame, roi, cv::Scalar(0, 255, 0));
         cv::imshow("Output", frame);
-        key = cv::waitKey(1);
+        key = cv::waitKey(20);
     }
     capture.release();
     return 0;

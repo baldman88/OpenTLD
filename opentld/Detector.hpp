@@ -7,6 +7,7 @@
 #include <memory>
 #include <functional>
 #include <random>
+#include <chrono>
 
 #include <opencv2/imgproc/imgproc.hpp>
 

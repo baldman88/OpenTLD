@@ -25,6 +25,7 @@ std::vector<Patch> Detector::detect(const cv::Mat& frame, const cv::Rect& patchR
     std::cout << "patchRect(" << patchRect.x << ", " << patchRect.y << ", "
             << patchRect.width << ", " << patchRect.height << ")" << std::endl;
 #endif
+    auto begin = std::chrono::high_resolution_clock::now();
     std::vector<Patch> patches;
     int width;
     int height;
@@ -156,6 +157,8 @@ std::vector<Patch> Detector::detect(const cv::Mat& frame, const cv::Rect& patchR
                                               std::bind(&Detector::checkPatchConformity, this, std::placeholders::_1));
         patches.erase(end, patches.end());
     }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << "Detector elapsed = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << std::endl;
 //    std::cout << "Detector, patches (after) count = " << patches.size() << std::endl;
     return patches;
 }
