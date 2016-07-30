@@ -4,6 +4,8 @@
 #include <vector>
 #include <mutex>
 #include <memory>
+#include <iostream>
+#include <atomic>
 
 #include <opencv2/imgproc/imgproc.hpp>
 
@@ -12,19 +14,20 @@
 class Fern
 {
 public:
-    explicit Fern(const int featuresCount, const double minScale);
+    explicit Fern(const int featuresCount, const double minScale, const double maxScale);
     ~Fern() = default;
-    void train(const cv::Mat& frame, const cv::Rect& patchRect, const bool isPositive);
-    double classify(const cv::Mat& frame, const cv::Rect& patchRect) const;
+    void train(const cv::Mat &frame, const cv::Rect &patchRect, const bool isPositive);
+    double classify(const cv::Mat &frame, const cv::Rect &patchRect) const;
     void reset();
 
 private:
+    int leafsCount;
     std::vector<std::shared_ptr<Feature>> features;
-    std::vector<double> posteriors;
-    std::vector<int> positives;
-    std::vector<int> negatives;
+    std::vector<std::atomic<double>> posteriors;
+    std::vector<std::atomic<int>> positives;
+    std::vector<std::atomic<int>> negatives;
     std::mutex mutex;
-    int getLeafIndex(const cv::Mat& frame, const cv::Rect& patchRect) const;
+    int getLeafIndex(const cv::Mat &frame, const cv::Rect &patchRect) const;
 };
 
 #endif /* FERN_HPP */

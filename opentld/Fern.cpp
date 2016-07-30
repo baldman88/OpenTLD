@@ -1,46 +1,46 @@
 #include "Fern.hpp"
 
 
-Fern::Fern(const int featuresCount, const double minScale)
+Fern::Fern(const int featuresCount, const double minScale, const double maxScale)
 {
     for (int feature = 0; feature < featuresCount; ++feature)
     {
-        features.push_back(std::make_shared<Feature>(minScale));
+        features.push_back(std::make_shared<Feature>(minScale, maxScale));
     }
-    int leafsCount = pow(4, featuresCount);
-    positives = std::vector<int>(leafsCount, 0);
-    negatives = std::vector<int>(leafsCount, 0);
-    posteriors = std::vector<double>(leafsCount, 0.0);
+    leafsCount = pow(4, featuresCount);
+    positives = std::vector<std::atomic<int>>(leafsCount);
+    negatives = std::vector<std::atomic<int>>(leafsCount);
+    posteriors = std::vector<std::atomic<double>>(leafsCount);
 }
 
 
-void Fern::train(const cv::Mat& frame, const cv::Rect& patchRect, const bool isPositive)
+void Fern::train(const cv::Mat &frame, const cv::Rect &patchRect, const bool isPositive)
 {
     int leaf = getLeafIndex(frame, patchRect);
-    std::lock_guard<std::mutex> lock(mutex);
+//    std::lock_guard<std::mutex> lock(mutex);
     if (isPositive == true)
     {
-        ++negatives[leaf];
+        (positives[leaf]).store(positives.at(leaf).load() + 1);
     }
     else
     {
-        ++positives[leaf];
+        (negatives[leaf]).store(negatives.at(leaf).load() + 1);
     }
 
-    if (positives.at(leaf) > 0)
+    if (positives.at(leaf).load() > 0)
     {
-        posteriors[leaf] = static_cast<double>(positives.at(leaf)) / (positives.at(leaf) + negatives.at(leaf));
+        (posteriors[leaf]).store(static_cast<double>(positives.at(leaf).load()) / (positives.at(leaf).load() + negatives.at(leaf).load()));
     }
 }
 
 
-double Fern::classify(const cv::Mat& frame, const cv::Rect& patchRect) const
+double Fern::classify(const cv::Mat &frame, const cv::Rect &patchRect) const
 {
-    return posteriors.at(getLeafIndex(frame, patchRect));
+    return posteriors.at(getLeafIndex(frame, patchRect)).load();
 }
 
 
-int Fern::getLeafIndex(const cv::Mat& frame, const cv::Rect& patchRect) const
+int Fern::getLeafIndex(const cv::Mat &frame, const cv::Rect &patchRect) const
 {
     int leaf = 0;
     int featureCounter = 0;
@@ -49,14 +49,13 @@ int Fern::getLeafIndex(const cv::Mat& frame, const cv::Rect& patchRect) const
         leaf += (feature->test(frame, patchRect) << (2 * featureCounter));
         featureCounter++;
     }
-
     return leaf;
 }
 
 
 void Fern::reset()
 {
-    positives.assign(positives.size(), 0);
-    negatives.assign(negatives.size(), 0);
-    posteriors.assign(posteriors.size(), 0.0);
+    positives = std::vector<std::atomic<int>>(leafsCount);
+    negatives = std::vector<std::atomic<int>>(leafsCount);
+    posteriors = std::vector<std::atomic<double>>(leafsCount);
 }

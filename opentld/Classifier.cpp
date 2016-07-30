@@ -2,17 +2,17 @@
 #include <iostream>
 
 
-Classifier::Classifier(const int fernsCount, const int featuresCount, const double minFeatureScale)
+Classifier::Classifier(const int fernsCount, const int featuresCount, const double minFeatureScale, const double maxFeatureScale)
     : minOverlap(0.6)
 {
     for (int fern = 0; fern < fernsCount; ++fern)
     {
-        ferns.push_back(std::make_shared<Fern>(featuresCount, minFeatureScale));
+        ferns.push_back(std::make_shared<Fern>(featuresCount, minFeatureScale, maxFeatureScale));
     }
 }
 
 
-void Classifier::train(const cv::Mat& frame, const cv::Rect& patchRect, const bool isPositive)
+void Classifier::train(const cv::Mat &frame, const cv::Rect &patchRect, const bool isPositive)
 {
 //    std::cout << patchRect.x << ", " << patchRect.y << ", " << patchRect.width << ", " << patchRect.height << std::endl;
     for (auto fern: ferns)
@@ -22,8 +22,9 @@ void Classifier::train(const cv::Mat& frame, const cv::Rect& patchRect, const bo
 }
 
 
-void Classifier::trainNegative(const cv::Mat& frame, const cv::Rect& patchRect)
+void Classifier::trainNegative(const cv::Mat &frame, const cv::Rect &patchRect)
 {
+//    std::cout << "Classifier::trainNegative(), starts here" << std::endl;
     double minScale = 0.5;
     double maxScale = 1.5;
     double scaleStep = 0.25;
@@ -49,10 +50,11 @@ void Classifier::trainNegative(const cv::Mat& frame, const cv::Rect& patchRect)
             }
         }
     }
+//    std::cout << "Classifier::trainNegative(), ends here" << std::endl;
 }
 
 
-//void Classifier::trainPositive(const cv::Mat& frame, const cv::Rect& patchRect)
+//void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
 //{
 //    cv::Point2f patchRectCenter = getRectCenter(patchRect);
 //    double maxAngle;
@@ -103,7 +105,7 @@ void Classifier::trainNegative(const cv::Mat& frame, const cv::Rect& patchRect)
 //}
 
 
-void Classifier::trainPositive(const cv::Mat& frame, const cv::Rect& patchRect)
+void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
 {
     cv::Point2f patchRectCenter = getRectCenter(patchRect);
     for (double scale = 0.95; scale <= 1.05; scale += 0.05)
@@ -165,7 +167,7 @@ void Classifier::trainPositive(const cv::Mat& frame, const cv::Rect& patchRect)
 }
 
 
-cv::Mat Classifier::transform(const cv::Mat& frame, const cv::Point2f& center, const double angle) const
+cv::Mat Classifier::transform(const cv::Mat &frame, const cv::Point2f &center, const double angle) const
 {
     cv::Mat transformMatrix = cv::getRotationMatrix2D(center, angle, 1.0);
     cv::Mat transformedFrame;
@@ -176,7 +178,7 @@ cv::Mat Classifier::transform(const cv::Mat& frame, const cv::Point2f& center, c
 }
 
 
-void Classifier::init(const cv::Mat& frame, const cv::Rect& patchRect)
+void Classifier::init(const cv::Mat &frame, const cv::Rect &patchRect)
 {
     for (size_t fern = 0; fern < ferns.size(); ++fern)
     {
@@ -190,7 +192,7 @@ void Classifier::init(const cv::Mat& frame, const cv::Rect& patchRect)
 }
 
 
-double Classifier::classify(const cv::Mat& frame, const cv::Rect& patchRect) const
+double Classifier::classify(const cv::Mat &frame, const cv::Rect &patchRect) const
 {
     double sum = 0.0;
     for (uint fern = 0; fern < ferns.size(); ++fern)
@@ -201,7 +203,7 @@ double Classifier::classify(const cv::Mat& frame, const cv::Rect& patchRect) con
 }
 
 
-double Classifier::getRectsOverlap(const cv::Rect& first, const cv::Rect& second) const
+double Classifier::getRectsOverlap(const cv::Rect &first, const cv::Rect &second) const
 {
     double overlap = 0.0;
     cv::Rect overlapRect = first & second;
@@ -209,12 +211,15 @@ double Classifier::getRectsOverlap(const cv::Rect& first, const cv::Rect& second
     {
         overlap = static_cast<double>(overlapRect.area()) / (first.area() + second.area() - overlapRect.area());
     }
-//    std::cout << "Overlap = " << overlap << std::endl;
+//    std::cout << "(" << first.x << ", " << first.y << ", " << first.width << ", " << first.height << "); ("
+//            << second.x << ", " << second.y << ", " << second.width << ", " << second.height << "); ("
+//            << overlapRect.x << ", " << overlapRect.y << ", " << overlapRect.width << ", " << overlapRect.height
+//            << "); overlap = " << overlap << std::endl;
     return overlap;
 }
 
 
-cv::Point2f Classifier::getRectCenter(const cv::Rect& rect) const
+cv::Point2f Classifier::getRectCenter(const cv::Rect &rect) const
 {
     float x = static_cast<float>(round(rect.x + (rect.width / 2.0)));
     float y = static_cast<float>(round(rect.y + (rect.height / 2.0)));

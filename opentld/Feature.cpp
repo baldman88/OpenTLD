@@ -1,21 +1,23 @@
 #include "Feature.hpp"
+#include <iostream>
 
 
-Feature::Feature(const double minScale)
+Feature::Feature(const double minScale, const double maxScale)
 {
     std::random_device randomDevice;
     std::mt19937 randomEngine(randomDevice());
     std::uniform_real_distribution<double> distribution(0.0, 1.0);
-    /* scaleW and scaleH in range minScale .. 1.0 */
-    scaleW = ((1.0 - minScale) * distribution(randomEngine)) + minScale;
-    scaleH = ((1.0 - minScale) * distribution(randomEngine)) + minScale;
+    /* scaleW and scaleH in range minScale .. maxScale */
+    scaleW = ((maxScale - minScale) * distribution(randomEngine)) + minScale;
+    scaleH = ((maxScale - minScale) * distribution(randomEngine)) + minScale;
     /* scaleX and scaleY in range 0.0 .. (1.0 - minScale) */
     scaleX = (1.0 - scaleW) * distribution(randomEngine);
     scaleY = (1.0 - scaleH) * distribution(randomEngine);
+//    std::cout << "sX = " << scaleX << "; sY = " << scaleY << "; sW = " << scaleW << "; sH = " << scaleH << std::endl;
 }
 
 
-int Feature::test(const cv::Mat& frame, const cv::Rect& patchRect)
+int Feature::test(const cv::Mat &frame, const cv::Rect &patchRect)
 {
     int x = static_cast<int>(round(scaleX * patchRect.width)) + patchRect.x;
     int y = static_cast<int>(round(scaleY * patchRect.height)) + patchRect.y;
@@ -29,7 +31,7 @@ int Feature::test(const cv::Mat& frame, const cv::Rect& patchRect)
 }
 
 
-int Feature::sumRect(const cv::Mat& frame, const cv::Rect& patchRect)
+int Feature::sumRect(const cv::Mat &frame, const cv::Rect &patchRect)
 {
     return (frame.at<int>(cv::Point(patchRect.x + patchRect.width, patchRect.y + patchRect.height))
             + frame.at<int>(cv::Point(patchRect.x, patchRect.y))
