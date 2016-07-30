@@ -53,8 +53,8 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
     }
     else
     {
-        minScale = 0.8;
-        maxScale = 1.2;
+        minScale = 0.9;
+        maxScale = 1.1;
     }
 
     std::set<int> widths;

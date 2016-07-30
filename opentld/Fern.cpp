@@ -16,16 +16,15 @@ Fern::Fern(const int featuresCount, const double minScale, const double maxScale
 
 void Fern::train(const cv::Mat &frame, const cv::Rect &patchRect, const bool isPositive)
 {
-    std::cout << "In Fern::train ..." << std::endl;
     int leaf = getLeafIndex(frame, patchRect);
-    std::lock_guard<std::mutex> lock(mutex);
+//    std::lock_guard<std::mutex> lock(mutex);
     if (isPositive == true)
     {
-        (negatives[leaf]).store(negatives[leaf].load()++);
+        (positives[leaf]).store(positives.at(leaf).load() + 1);
     }
     else
     {
-        (positives[leaf]).store(positives[leaf].load()++);
+        (negatives[leaf]).store(negatives.at(leaf).load() + 1);
     }
 
     if (positives.at(leaf).load() > 0)
