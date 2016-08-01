@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include <chrono>
+#include <set>
 
 #include "Concurrent.hpp"
 #include "Fern.hpp"
