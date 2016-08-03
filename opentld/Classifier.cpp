@@ -51,120 +51,6 @@ void Classifier::trainNegative(const cv::Mat &frame, const cv::Rect &patchRect)
 }
 
 
-//void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
-//{
-//    cv::Point2f patchRectCenter = getRectCenter(patchRect);
-//    double maxAngle;
-//    cv::Rect warpFrameRect;
-//    /* warpSize takes into account the size of the maximum values of the offset (±3 pixels) and scaling (1.1) */
-//    cv::Size warpSize(static_cast<int>(std::ceil(patchRect.width * 1.1 + 6)),
-//                      static_cast<int>(std::ceil(patchRect.height * 1.1 + 6)));
-//    for (maxAngle = 10.0; maxAngle > 0.0; maxAngle -= 1.0)
-//    {
-//        warpFrameRect = cv::RotatedRect(patchRectCenter, warpSize, maxAngle).boundingRect();
-//        if ((warpFrameRect.tl().x >= 0) && (warpFrameRect.tl().y >= 0)
-//            && (warpFrameRect.br().x < frame.cols) && (warpFrameRect.br().y < frame.rows))
-//        {
-//            break;
-//        }
-//    }
-//    cv::Mat warpFrame = frame(warpFrameRect);
-//    cv::Rect warpPatchRect((patchRect.x - warpFrameRect.x), (patchRect.y - warpFrameRect.y), patchRect.width, patchRect.height);
-//    std::vector<double> angles;
-//    for (double angle = -maxAngle; angle <= maxAngle; angle += 1.0)
-//    {
-//        angles.push_back(angle);
-//    }
-//    cv::Point2f warpPatchRectCenter = getRectCenter(warpPatchRect);
-//    std::vector<cv::Mat> warpFrames(angles.size());
-//    concurrent::blockingMapped(angles.begin(), angles.end(), warpFrames.begin(),
-//                               std::bind(&Classifier::transform, this, warpFrame, warpPatchRectCenter, std::placeholders::_1));
-//    std::vector<cv::Rect> positivePatches;
-//    for (int xOffset = -3; xOffset <= 3; xOffset += 1)
-//    {
-//        for (int yOffset = -3; yOffset <= 3; yOffset += 1)
-//        {
-//            for (double scale = 0.9; scale <= 1.1; scale += 0.1)
-//            {
-//                int width = round(warpPatchRect.width * scale);
-//                int height = round(warpPatchRect.height * scale);
-//                int x = warpPatchRectCenter.x - (width / 2) + xOffset;
-//                int y = warpPatchRectCenter.y - (height / 2) + yOffset;
-//                positivePatches.push_back(cv::Rect(x, y, width, height));
-//            }
-//        }
-//    }
-//    for (size_t i = 0; i < warpFrames.size(); ++i)
-//    {
-//        concurrent::blockingMap(positivePatches.begin(), positivePatches.end(),
-//                                std::bind(&Classifier::train, this, warpFrames.at(i), std::placeholders::_1, 1));
-//    }
-//}
-
-
-/*** Previous version ***/
-//void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
-//{
-//    cv::Point2f patchRectCenter = getRectCenter(patchRect);
-//    for (double scale = 0.95; scale <= 1.05; scale += 0.05)
-//    {
-//        cv::Size warpSize(static_cast<int>(std::ceil(patchRect.width * scale + 6)),
-//                          static_cast<int>(std::ceil(patchRect.height * scale + 6)));
-//        if (((patchRectCenter.x - (warpSize.width / 2)) >= 0)
-//             && ((patchRectCenter.x + (warpSize.width / 2)) < frame.cols)
-//             && ((patchRectCenter.y - (warpSize.height / 2)) >= 0)
-//             && ((patchRectCenter.y + (warpSize.height / 2)) < frame.rows))
-//        {
-//            double maxAngle;
-//            cv::Rect warpFrameRect;
-//            for (maxAngle = 10.0; maxAngle >= 0.0; maxAngle -= 1.0)
-//            {
-//                warpFrameRect = cv::RotatedRect(patchRectCenter, warpSize, maxAngle).boundingRect();
-//                if ((warpFrameRect.tl().x >= 0)
-//                    && (warpFrameRect.tl().y >= 0)
-//                    && (warpFrameRect.br().x < frame.cols)
-//                    && (warpFrameRect.br().y < frame.rows))
-//                {
-//                    break;
-//                }
-//            }
-//            cv::Mat warpFrame = frame(warpFrameRect);
-//            cv::Rect warpPatchRect((patchRect.x - warpFrameRect.x), (patchRect.y - warpFrameRect.y), patchRect.width, patchRect.height);
-//            std::vector<double> angles;
-//            for (double angle = -maxAngle; angle <= maxAngle; angle += 1.0)
-//            {
-//                angles.push_back(angle);
-//            }
-//            cv::Point2f warpPatchRectCenter = getRectCenter(warpPatchRect);
-//            std::vector<cv::Mat> warpFrames(angles.size());
-//            concurrent::blockingMapped(angles.begin(), angles.end(), warpFrames.begin(),
-//                                       std::bind(&Classifier::transform, this, warpFrame, warpPatchRectCenter, std::placeholders::_1));
-//            std::vector<cv::Rect> positivePatches;
-//            for (int xOffset = -3; xOffset <= 3; xOffset += 1)
-//            {
-//                for (int yOffset = -3; yOffset <= 3; yOffset += 1)
-//                {
-//                        int x = warpPatchRectCenter.x - (warpSize.width / 2) + xOffset;
-//                        int y = warpPatchRectCenter.y - (warpSize.height / 2) + yOffset;
-//                        cv::Rect testPatchRect(x, y, warpSize.width, warpSize.height);
-//                        if ((testPatchRect.tl().x >= 0) && (testPatchRect.tl().y >= 0)
-//                            && (testPatchRect.br().x < warpFrameRect.width)
-//                            && (testPatchRect.br().y < warpFrameRect.height))
-//                        {
-//                            positivePatches.push_back(cv::Rect(x, y, warpSize.width, warpSize.height));
-//                        }
-//                }
-//            }
-//            for (size_t i = 0; i < warpFrames.size(); ++i)
-//            {
-//                concurrent::blockingMap(positivePatches.begin(), positivePatches.end(),
-//                                        std::bind(&Classifier::train, this, warpFrames.at(i), std::placeholders::_1, true));
-//            }
-//        }
-//    }
-//}
-
-
 void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
 {
     cv::Point2f patchRectCenter = getRectCenter(patchRect);
@@ -179,7 +65,7 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
         int maxX = (patchRectCenter.x + (width / 2)) + 3;
         if ((minX >= 0) && (maxX < frame.cols))
         {
-            widths.insert(patchRect.width * scale);
+            widths.insert(width);
         }
 
         int height = patchRect.height * scale;
@@ -187,25 +73,25 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
         int maxY = (patchRectCenter.y + (height / 2)) + 3;
         if ((minY >= 0) && (maxY < frame.rows))
         {
-            heights.insert(patchRect.height * scale);
+            heights.insert(height);
         }
     }
 
     if ((widths.empty() != true) && (heights.empty() != true))
     {
-        int maxWidth = *(widths.rbegin());
-        int minGapX = patchRectCenter.x - (maxWidth / 2) - 3;
-        int maxGapX = frame.cols - (patchRectCenter.x + (maxWidth / 2)) + 2;
-        int maxHeight = *(heights.rbegin());
-        int minGapY = patchRectCenter.y - (maxHeight / 2) - 3;
-        int maxGapY = frame.rows - (patchRectCenter.y + (maxHeight / 2)) + 2;
-        int gap = std::min(std::min(minGapX, maxGapX), std::min(minGapY, maxGapY));
-        int maxSize = std::max(maxWidth, maxHeight);
-        double maxAngle = std::min(floor(10.0 / (maxSize / 13.0 / gap)), 10.0);
+        cv::Size warpFrameSize(*(widths.rbegin()), *(heights.rbegin()));
+        double maxAngle;
+        cv::Rect warpFrameRect;
+        for (maxAngle = 10.0; maxAngle >= 0.0; maxAngle -= 1.0) {
+            warpFrameRect = cv::RotatedRect(patchRectCenter, warpFrameSize, maxAngle).boundingRect();
+            if ((warpFrameRect.tl().x >= 0) && (warpFrameRect.tl().y >= 0) &&
+                    (warpFrameRect.br().x < frame.cols) && (warpFrameRect.br().y < frame.rows)) {
+                break;
+            }
+        }
 
-        cv::Rect warpFrameRect(minGapX, minGapY, maxWidth, maxHeight);
-        cv::Mat warpFrame = frame(warpFrameRect);
         cv::Rect warpPatchRect((patchRect.x - warpFrameRect.x), (patchRect.y - warpFrameRect.y), patchRect.width, patchRect.height);
+        cv::Mat warpFrame = frame(warpFrameRect);
         std::vector<double> angles;
         for (double angle = -maxAngle; angle <= maxAngle; angle += 1.0)
         {
@@ -226,9 +112,9 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
             for (auto heightsIter = heights.begin(); heightsIter != heights.end(); ++heightsIter)
             {
                 int height = *heightsIter;
-                for (int xOffset = -3; xOffset <= 3; xOffset += 1)
+                for (int xOffset = -1; xOffset <= 1; xOffset += 1)
                 {
-                    for (int yOffset = -3; yOffset <= 3; yOffset += 1)
+                    for (int yOffset = -1; yOffset <= 1; yOffset += 1)
                     {
                         int x = warpPatchRectCenter.x - (width / 2) + xOffset;
                         int y = warpPatchRectCenter.y - (height / 2) + yOffset;
@@ -241,12 +127,12 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
                         }
                     }
                 }
-                for (size_t i = 0; i < warpFrames.size(); ++i)
-                {
-                    concurrent::blockingMap(positivePatches.begin(), positivePatches.end(),
-                                            std::bind(&Classifier::train, this, warpFrames.at(i), std::placeholders::_1, true));
-                }
             }
+        }
+        for (size_t i = 0; i < warpFrames.size(); ++i)
+        {
+            concurrent::blockingMap(positivePatches.begin(), positivePatches.end(),
+                                    std::bind(&Classifier::train, this, warpFrames.at(i), std::placeholders::_1, true));
         }
     }
 }
