@@ -82,10 +82,12 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
         cv::Size warpFrameSize(*(widths.rbegin()), *(heights.rbegin()));
         double maxAngle;
         cv::Rect warpFrameRect;
-        for (maxAngle = 10.0; maxAngle >= 0.0; maxAngle -= 1.0) {
+        for (maxAngle = 10.0; maxAngle >= 0.0; maxAngle -= 1.0)
+        {
             warpFrameRect = cv::RotatedRect(patchRectCenter, warpFrameSize, maxAngle).boundingRect();
             if ((warpFrameRect.tl().x >= 0) && (warpFrameRect.tl().y >= 0) &&
-                    (warpFrameRect.br().x < frame.cols) && (warpFrameRect.br().y < frame.rows)) {
+                    (warpFrameRect.br().x < frame.cols) && (warpFrameRect.br().y < frame.rows))
+            {
                 break;
             }
         }
