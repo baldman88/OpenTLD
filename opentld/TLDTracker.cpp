@@ -3,7 +3,7 @@
 
 TLDTracker::TLDTracker(const int ferns, const int nodes, const double minFeatureScale, const double maxFeatureScale)
 : confidence(1.0), isInitialised(false), trackingConfidence(0.75),
-  reinitConfidence(0.75), learningConfidence(0.85)
+  reinitConfidence(0.85), learningConfidence(0.9)
 {
     classifier = std::make_shared<Classifier>(ferns, nodes, minFeatureScale, maxFeatureScale);
     detector = std::make_shared<Detector>(classifier);
@@ -42,7 +42,8 @@ cv::Rect TLDTracker::getTargetRect(const cv::Mat &frameRGB, const cv::Rect &targ
         for (size_t i = 0; i < detectedPatches.size(); ++i)
         {
             float detectedConfidence = detectedPatches.at(i).confidence;
-            if ((detectedPatches.at(i).isOverlaps == true) || ((targetRect.area() == 0) && (detectedConfidence > 0.95)))
+            std::cout << "confidence = " << detectedConfidence << std::endl;
+            if ((detectedPatches.at(i).isOverlaps == true) || (/*(targetRect.area() == 0) &&*/ (detectedConfidence > 0.9)))
             {
 
                 if (detectedConfidence > maxDetectedConfidence)
@@ -52,11 +53,11 @@ cv::Rect TLDTracker::getTargetRect(const cv::Mat &frameRGB, const cv::Rect &targ
                 }
             }
         }
+        std::cout << "maxDetectedConfidence = " << maxDetectedConfidence << std::endl;
         if ((trackedPatch.confidence < reinitConfidence) && (maxDetectedConfidence >= reinitConfidence))
         {
             trackedPatch = detectedPatches.at(maxDetectedConfidenceIndex);
             //                detector->setVarianceThreshold(frame, trackedPatch.rect);
-            //                detector->setPatchRectSize(trackedPatch.rect);
         }
         if (targetRect.area() > 0)
         {
