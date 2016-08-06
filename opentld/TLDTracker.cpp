@@ -42,7 +42,7 @@ cv::Rect TLDTracker::getTargetRect(const cv::Mat &frameRGB, const cv::Rect &targ
         for (size_t i = 0; i < detectedPatches.size(); ++i)
         {
             float detectedConfidence = detectedPatches.at(i).confidence;
-            std::cout << "confidence = " << detectedConfidence << std::endl;
+//            std::cout << "confidence = " << detectedConfidence << std::endl;
             if ((detectedPatches.at(i).isOverlaps == true) || (/*(targetRect.area() == 0) &&*/ (detectedConfidence > 0.9)))
             {
 
