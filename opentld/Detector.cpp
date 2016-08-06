@@ -67,21 +67,26 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
         currentPatch = cv::Rect(0, 0, 0, 0);
     }
 
-    if (currentPatch.area() > 0)
+    double minScale = 0.95;
+    double maxScale = 1.05;
+    double scaleStep = 0.05;
+    if ((currentPatch.width >= (lastPatch.width * minScale))
+            && (currentPatch.width <= (lastPatch.width * maxScale))
+            && (currentPatch.height >= (lastPatch.height * minScale))
+            && (currentPatch.height <= (lastPatch.height * maxScale)))
     {
         lastPatch = currentPatch;
     }
-
-    double minScale;
-    double maxScale;
-    double scaleStep = 0.05;
-    if (currentPatch.area() > 0)
+    else if ((currentPatch.width >= (lastPatch.width * 0.75))
+            && (currentPatch.width <= (lastPatch.width * 1.25))
+            && (currentPatch.height >= (lastPatch.height * 0.75))
+            && (currentPatch.height <= (lastPatch.height * 1.25)))
     {
-        minScale = 0.95;
-        maxScale = 1.05;
+        currentPatch = lastPatch;
     }
     else
     {
+        currentPatch = cv::Rect(0, 0, 0, 0);
         minScale = 0.9;
         maxScale = 1.1;
     }
