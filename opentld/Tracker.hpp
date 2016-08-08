@@ -12,13 +12,6 @@
 #include "Patch.hpp"
 
 
-#define DIM_POINTS 20
-
-#define TOTAL_POINTS (DIM_POINTS * DIM_POINTS)
-
-#define PATCH_SIZE 10
-
-
 class Tracker
 {
 public:

@@ -179,35 +179,8 @@ std::vector<cv::Point2f> Tracker::getGridPoints(const cv::Rect &rect) const
             gridPoints.push_back(cv::Point2f(x, y));
         }
     }
-    std::cout << "gridPoints.size() = " << gridPoints.size() << std::endl;
-    std::cout << "patch = (" << rect.x << ", " << rect.y << ", " << rect.width << ", " << rect.height << ")" << std::endl;
-    std::cout << "templateSize = " << templateSize << std::endl;
-    std::cout << "last point = " << (*gridPoints.rbegin()).x << ", " << (*gridPoints.rbegin()).y << std::endl;
     return gridPoints;
 }
-
-
-//std::vector<cv::Point2f> Tracker::getGridPoints(const cv::Rect &rect) const
-//{
-//    cv::Rect localRect;
-//    localRect.x = rect.x + (PATCH_SIZE / 2);
-//    localRect.y = rect.y + (PATCH_SIZE / 2);
-//    localRect.width = rect.width - PATCH_SIZE;
-//    localRect.height = rect.height - PATCH_SIZE;
-//    double stepByWidth = static_cast<double>(localRect.width) / (DIM_POINTS - 1);
-//    double stepByHeight = static_cast<double>(localRect.height) / (DIM_POINTS - 1);
-//    std::vector<cv::Point2f> gridPoints;
-//    for (uint i = 0; i < DIM_POINTS; ++i)
-//    {
-//        for (uint j = 0; j < DIM_POINTS; ++j)
-//        {
-//            double x = localRect.x + (stepByWidth * i);
-//            double y = localRect.y + (stepByHeight * j);
-//            gridPoints.push_back(cv::Point2f(x, y));
-//        }
-//    }
-//    return gridPoints;
-//}
 
 
 cv::Rect Tracker::getBoundedRect(const cv::Rect &rect, const std::vector<cv::Point2f> &prevPoints,
@@ -243,37 +216,3 @@ cv::Rect Tracker::getBoundedRect(const cv::Rect &rect, const std::vector<cv::Poi
     boundedRect.height = rect.height + round(shiftH * 2);
     return boundedRect;
 }
-
-
-//cv::Rect Tracker::getBoundedRect(const cv::Rect &rect, const std::vector<cv::Point2f> &prevPoints,
-//                                 const std::vector<cv::Point2f> &nextPoints) const
-//{
-//    std::vector<double> diffX;
-//    std::vector<double> diffY;
-//    for (uint point = 0; point < prevPoints.size(); ++point)
-//    {
-//        diffX.push_back(nextPoints.at(point).x - prevPoints.at(point).x);
-//        diffY.push_back(nextPoints.at(point).y - prevPoints.at(point).y);
-//    }
-//    double dX = getMedian(diffX);
-//    double dY = getMedian(diffY);
-//    std::vector<double> pointsShift;
-//    for (uint i = 0; i < (prevPoints.size() - 1); ++i)
-//    {
-//        for (uint j = (i + 1); j < prevPoints.size(); ++j)
-//        {
-//            double distPrev = sqrt(pow((prevPoints.at(i).x - prevPoints.at(j).x), 2) + pow((prevPoints.at(i).y - prevPoints.at(j).y), 2));
-//            double distNext = sqrt(pow((nextPoints.at(i).x - nextPoints.at(j).x), 2) + pow((nextPoints.at(i).y - nextPoints.at(j).y), 2));
-//            pointsShift.push_back(distNext / distPrev);
-//        }
-//    }
-//    double shift = getMedian(pointsShift);
-//    double shiftW = 0.5 * (shift - 1) * rect.width;
-//    double shiftH = 0.5 * (shift - 1) * rect.height;
-//    cv::Rect boundedRect;
-//    boundedRect.x = rect.x - round(shiftW - dX);
-//    boundedRect.y = rect.y - round(shiftH - dY);
-//    boundedRect.width = rect.width + round(shiftW * 2);
-//    boundedRect.height = rect.height + round(shiftH * 2);
-//    return boundedRect;
-//}
