@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <memory>
+#include <iostream>
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/video/tracking.hpp>
@@ -35,11 +36,12 @@ private:
     cv::Size windowSize;
     cv::TermCriteria termCriteria;
     std::shared_ptr<Classifier> classifier;
+    int templateSize;
 
-    float getMedian(const std::vector<float> &array) const;
-    std::vector<float> getEuclideanDistance(const std::vector<cv::Point2f> &forwardPoints,
+    double getMedian(const std::vector<double> &array) const;
+    std::vector<double> getEuclideanDistance(const std::vector<cv::Point2f> &forwardPoints,
                                             const std::vector<cv::Point2f> &backwardPoints) const;
-    std::vector<float> getNormCrossCorrelation(const std::vector<cv::Point2f> &prevPoints,
+    std::vector<double> getNormCrossCorrelation(const std::vector<cv::Point2f> &prevPoints,
                                                const std::vector<cv::Point2f> &nextPoints) const;
     std::vector<cv::Point2f> getGridPoints(const cv::Rect &rect) const;
     cv::Rect getBoundedRect(const cv::Rect &rect, const std::vector<cv::Point2f> &prevPoints,
