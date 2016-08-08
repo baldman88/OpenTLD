@@ -206,7 +206,6 @@ cv::Rect Tracker::getBoundedRect(const cv::Rect &rect, const std::vector<cv::Poi
         }
     }
     double shift = getMedian(pointsShift);
-    std::cout << "shift = " << shift << std::endl;
     double shiftW = 0.5 * (shift - 1) * rect.width;
     double shiftH = 0.5 * (shift - 1) * rect.height;
     cv::Rect boundedRect;
