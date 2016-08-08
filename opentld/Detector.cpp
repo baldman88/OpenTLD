@@ -91,6 +91,22 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
         maxScale = 1.1;
     }
 
+    cv::Rect predictedPatch = filter.predict(currentPatch);
+    if ((currentPatch.area() == 0)
+            && (predictedPatch.width >= (lastPatch.width * minScale))
+            && (predictedPatch.width <= (lastPatch.width * maxScale))
+            && (predictedPatch.height >= (lastPatch.height * minScale))
+            && (predictedPatch.height <= (lastPatch.height * maxScale))
+            && ((predictedPatch.x + predictedPatch.width)  < frame.cols)
+            && ((predictedPatch.y + predictedPatch.height) < frame.rows))
+    {
+        currentPatch = predictedPatch;
+        std::cout << ">>> lastPatch = (" << lastPatch.x << ", " << lastPatch.y << ", "
+                << lastPatch.width << ", " << lastPatch.height << ")" << std::endl;
+        std::cout << ">>> predictedPatch = (" << predictedPatch.x << ", " << predictedPatch.y << ", "
+                << predictedPatch.width << ", " << predictedPatch.height << ")" << std::endl;
+    }
+
     std::set<int> widths;
     std::set<int> heights;
 
