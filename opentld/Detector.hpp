@@ -31,10 +31,11 @@ private:
     std::shared_ptr<Classifier> classifier;
     int patchRectWidth;
     int patchRectHeight;
+    double varianceThreshold;
     int frameWidth;
     int frameHeight;
-    double varianceThreshold;
     const int minSideSize;
+    const int maxSideSize;
     cv::Rect lastPatch;
     cv::Rect currentPatch;
     std::vector<cv::Rect> zones;

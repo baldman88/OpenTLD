@@ -3,8 +3,8 @@
 
 
 Detector::Detector(std::shared_ptr<Classifier> &classifier)
-    : classifier(classifier), patchRectWidth(0), patchRectHeight(0),
-      frameWidth(0), frameHeight(0), varianceThreshold(0), minSideSize(16), currentZoneIndex(0) {}
+    : classifier(classifier), patchRectWidth(0), patchRectHeight(0), varianceThreshold(0),
+      frameWidth(0), frameHeight(0), minSideSize(16), maxSideSize(120), currentZoneIndex(0) {}
 
 
 void Detector::init(const cv::Mat &frame, const cv::Rect &patchRect)
@@ -17,11 +17,11 @@ void Detector::init(const cv::Mat &frame, const cv::Rect &patchRect)
     {
         int widthStep = frameWidth / 4;
         int heightStep = frameHeight / 4;
-        int zoneWidth = widthStep * 3;
-        int zoneHeight = heightStep * 3;
-        for (int i = 0; i < 2; ++i)
+        int zoneWidth = frameWidth / 2;
+        int zoneHeight = frameHeight / 2;
+        for (int i = 0; i < 3; ++i)
         {
-            for (int j = 0; j < 2; ++j)
+            for (int j = 0; j < 3; ++j)
             {
                 int startX = i * widthStep;
                 int startY = j * heightStep;
@@ -55,10 +55,11 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
     auto start = std::chrono::high_resolution_clock::now();
 
     if ((patchRect.width >= minSideSize) && (patchRect.height >= minSideSize)
-        && (patchRect.width < frame.cols) && (patchRect.height < frame.rows)
-        && (patchRect.x >= 0) && (patchRect.y >= 0)
-        && ((patchRect.x + patchRect.width) < frame.cols)
-        && ((patchRect.y + patchRect.height) < frame.rows))
+                    && (patchRect.width <= maxSideSize) && (patchRect.height <= maxSideSize)
+                    && (patchRect.width < frame.cols) && (patchRect.height < frame.rows)
+                    && (patchRect.x >= 0) && (patchRect.y >= 0)
+                    && ((patchRect.x + patchRect.width) < frame.cols)
+                    && ((patchRect.y + patchRect.height) < frame.rows))
     {
         currentPatch = patchRect;
     }
@@ -97,6 +98,8 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
             && (predictedPatch.width <= (lastPatch.width * maxScale))
             && (predictedPatch.height >= (lastPatch.height * minScale))
             && (predictedPatch.height <= (lastPatch.height * maxScale))
+            && (predictedPatch.x >= 0)
+            && (predictedPatch.y >= 0)
             && ((predictedPatch.x + predictedPatch.width)  < frame.cols)
             && ((predictedPatch.y + predictedPatch.height) < frame.rows))
     {

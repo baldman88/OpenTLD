@@ -37,7 +37,7 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
         isSelectionActive = false;
         roi.width = x - roi.x;
         roi.height = y - roi.y;
-        if ((roi.width < 16) || (roi.height < 16))
+        if ((roi.width < 16) || (roi.height < 16) || (roi.width > 120) || (roi.height > 120))
         {
             roi = cv::Rect(0, 0, 0, 0);
         }
