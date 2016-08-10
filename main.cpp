@@ -37,7 +37,7 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
         isSelectionActive = false;
         roi.width = x - roi.x;
         roi.height = y - roi.y;
-        if ((roi.width < 16) || (roi.height < 16) || (roi.width > 120) || (roi.height > 120))
+        if ((roi.width < 16) || (roi.height < 16) /*|| (roi.width > 120) || (roi.height > 120)*/)
         {
             roi = cv::Rect(0, 0, 0, 0);
         }
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 #ifdef DEBUG
     std::cout << "This is debug!" << std::endl;
 #endif
-    if (capture.open(1) == false)
+    if (capture.open("/home/baldman/YandexDisk/samples/videos/helicopters/7.mp4") == false)
     {
         capture.open(0);
     }
@@ -66,16 +66,40 @@ int main(int argc, char* argv[])
     cv::Mat frame;
     while (key != 'q')
     {
-        capture.read(frame);
-        if (isTargetSelected == true)
+        if (key == 32)
         {
-            auto begin = std::chrono::high_resolution_clock::now();
-            roi = tracker.getTargetRect(frame, roi);
-            auto end = std::chrono::high_resolution_clock::now();
-            std::cout << "Time elapsed = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << std::endl;
+            cv::Mat tmp;
+            while (isTargetSelected == false)
+            {
+                tmp = frame.clone();
+                char k = cv::waitKey(1);
+                cv::rectangle(tmp, roi, cv::Scalar(0, 255, 0));
+                cv::imshow("Output", tmp);
+                if (k == 32)
+                {
+                    break;
+                }
+            }
         }
-        cv::rectangle(frame, roi, cv::Scalar(0, 255, 0));
-        cv::imshow("Output", frame);
+        else
+        {
+            if (capture.read(frame) == true)
+            {
+                if (isTargetSelected == true)
+                {
+                    auto begin = std::chrono::high_resolution_clock::now();
+                    roi = tracker.getTargetRect(frame, roi);
+                    auto end = std::chrono::high_resolution_clock::now();
+                    std::cout << "Time elapsed = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << std::endl;
+                }
+                cv::rectangle(frame, roi, cv::Scalar(0, 255, 0));
+                cv::imshow("Output", frame);
+            }
+            else
+            {
+                break;
+            }
+        }
         key = cv::waitKey(20);
     }
     capture.release();
