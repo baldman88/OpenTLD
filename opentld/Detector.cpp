@@ -121,9 +121,18 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
 
     std::vector<cv::Rect> testRects;
     double stepDevider = 20.0;
-    cv::Point patchRectCenter = classifier->getRectCenter(lastPatch);
+    cv::Point patchRectCenter = classifier->getRectCenter(currentPatch);
 
     uint64_t total = 0;
+
+    cv::Mat integralFrame;
+    cv::Mat squareIntegralFrame;
+    cv::integral(frame, integralFrame, squareIntegralFrame);
+    int xStart = std::max((patchRectCenter.x - (currentPatch.width / 2) - currentPatch.width), 0);
+    int yStart = std::max((patchRectCenter.y - (currentPatch.height / 2) - currentPatch.height), 0);
+    int xStop = std::min((frameWidth - currentPatch.width), (patchRectCenter.x - (currentPatch.width / 2) + currentPatch.width));
+    int yStop = std::min((frameHeight - currentPatch.height), (patchRectCenter.y - (currentPatch.height / 2) + currentPatch.height));
+    varianceThreshold = getPatchVariance(integralFrame, squareIntegralFrame, cv::Rect(xStart, yStart, (xStop - xStart), (yStop - yStart)));
 
     for (auto widthIterator = widths.begin(); widthIterator != widths.end(); ++widthIterator)
     {
@@ -174,9 +183,9 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
     std::cout << "currentZoneIndex = " << currentZoneIndex << std::endl;
     std::cout << "testRects.size() = " << testRects.size() << std::endl;
     std::cout << "total = " << total << std::endl;
-    cv::Mat integralFrame;
-    cv::Mat squareIntegralFrame;
-    cv::integral(frame, integralFrame, squareIntegralFrame);
+//    cv::Mat integralFrame;
+//    cv::Mat squareIntegralFrame;
+//    cv::integral(frame, integralFrame, squareIntegralFrame);
     auto end = concurrent::blockingFilter(testRects.begin(), testRects.end(),
                                           std::bind(&Detector::checkPatchVariace, this,
                                                     integralFrame, squareIntegralFrame, std::placeholders::_1));
