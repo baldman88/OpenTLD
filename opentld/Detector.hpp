@@ -36,18 +36,19 @@ private:
     int frameHeight;
     const int minSideSize;
     const int maxSideSize;
-    cv::Rect lastPatch;
-    cv::Rect currentPatch;
-    std::vector<cv::Rect> zones;
-    uint currentZoneIndex;
+    cv::Rect lastPatchRect;
+    cv::Rect predictedPatchRect;
     KalmanFilter filter;
+    int failureCounter;
+    int failureScaleFactor;
+    cv::Point currentPatchRectCenter;
+    cv::Point predictedPatchRectCenter;
 
     Patch getPatch(const cv::Rect &testRect, const cv::Mat &frame, const cv::Rect &patchRect) const;
     bool checkPatchConformity(const Patch &patch) const;
     double getPatchVariance(const cv::Mat &integralFrame, const cv::Mat &squareIntegralFrame, const cv::Rect &patchRect) const;
     bool checkPatchVariace(const cv::Mat &integralFrame, const cv::Mat &squareIntegralFrame, const cv::Rect &patchRect) const;
-    int getZoneIndex(const cv::Point &point) const;
-    int getDistance(const cv::Point &first, const cv::Point &second) const;
+    cv::Rect getCurrentPatchRect(const cv::Rect &patchRect);
 };
 
 #endif /* DETECTOR_HPP */
