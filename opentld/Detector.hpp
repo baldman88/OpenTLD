@@ -15,6 +15,7 @@
 #include "Classifier.hpp"
 #include "Patch.hpp"
 #include "Concurrent.hpp"
+#include "KalmanFilter.hpp"
 
 
 class Detector
@@ -30,14 +31,16 @@ private:
     std::shared_ptr<Classifier> classifier;
     int patchRectWidth;
     int patchRectHeight;
+    double varianceThreshold;
     int frameWidth;
     int frameHeight;
-    double varianceThreshold;
     const int minSideSize;
+    const int maxSideSize;
     cv::Rect lastPatch;
     cv::Rect currentPatch;
     std::vector<cv::Rect> zones;
     uint currentZoneIndex;
+    KalmanFilter filter;
 
     Patch getPatch(const cv::Rect &testRect, const cv::Mat &frame, const cv::Rect &patchRect) const;
     bool checkPatchConformity(const Patch &patch) const;
