@@ -24,11 +24,13 @@ private:
     std::shared_ptr<Classifier> classifier;
     std::shared_ptr<Detector> detector;
     std::shared_ptr<Tracker> tracker;
-    double confidence;
+    double lastConfidence;
     bool isInitialised;
     const double trackingConfidence;
     const double reinitConfidence;
     const double learningConfidence;
+    const double minimumConfidence;
+    const double detectedConfidence;
 };
 
 #endif /* TLDTRACKER_HPP */

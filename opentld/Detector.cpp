@@ -116,8 +116,8 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
 
     for (double scale = minScale; scale <= maxScale; scale += scaleStep)
     {
-        widths.insert(lastPatchRect.width * scale);
-        heights.insert(lastPatchRect.height * scale);
+        widths.insert(static_cast<int>(round(lastPatchRect.width * scale)));
+        heights.insert(static_cast<int>(round(lastPatchRect.height * scale)));
     }
 
     double stepDevider = 20.0;
@@ -147,14 +147,14 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
         int xMax;
         if (currentPatchRect.area() > 0)
         {
-            xCurrent = currentPatchRectCenter.x - (currentWidth / 2);
+            xCurrent = currentPatchRectCenter.x - (static_cast<int>(round(currentWidth / 2)));
             xMin = std::max((xCurrent - currentWidth), 0);
             xMax = std::min((frameWidth - currentWidth), (xCurrent + currentWidth));
         }
         else
         {
 //            xCurrent = ((currentPatchRectCenter.x + predictedPatchRectCenter.x) / 2) - (currentWidth / 2);
-            xCurrent = (currentPatchRectCenter.x - (currentWidth / 2));
+            xCurrent = currentPatchRectCenter.x - (static_cast<int>(round(currentWidth / 2)));
             xMin = std::max((xCurrent - (currentWidth * failureScaleFactor)), 0);
             xMax = std::min((frameWidth - currentWidth), (xCurrent + (currentWidth * failureScaleFactor)));
         }
@@ -169,14 +169,14 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
                 int yMax;
                 if (currentPatchRect.area() > 0)
                 {
-                    yCurrent = currentPatchRectCenter.y - (currentHeight / 2);
+                    yCurrent = currentPatchRectCenter.y - (static_cast<int>(round(currentHeight / 2)));
                     yMin = std::max((yCurrent - currentHeight), 0);
                     yMax = std::min((frameHeight - currentHeight), (yCurrent + currentHeight));
                 }
                 else
                 {
 //                    yCurrent = ((currentPatchRectCenter.y + predictedPatchRectCenter.y) / 2) - (currentHeight / 2);
-                    yCurrent = (currentPatchRectCenter.y - (currentHeight / 2));
+                    yCurrent = currentPatchRectCenter.y - (static_cast<int>(round(currentHeight / 2)));
                     yMin = std::max((yCurrent - (currentHeight * failureScaleFactor)), 0);
                     yMax = std::min((frameHeight - currentHeight), (yCurrent + (currentHeight * failureScaleFactor)));
                 }
@@ -251,7 +251,7 @@ Patch Detector::getPatch(const cv::Rect &testRect, const cv::Mat &frame, const c
 bool Detector::checkPatchConformity(const Patch &patch) const
 {
     bool result = false;
-    if ((patch.confidence > 0.6f) || (patch.isOverlaps == true))
+    if ((patch.confidence > 0.6) || (patch.isOverlaps == true))
     {
         result = true;
     }
