@@ -137,7 +137,7 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
 //                                         cv::Rect(xStart, yStart, (xStop - xStart), (yStop - yStart)));
 
     std::vector<cv::Rect> testRects;
-    failureScaleFactor = std::max((failureCounter / 10), 1);
+    failureScaleFactor = std::max((failureCounter / 20), 1);
     for (auto widthIterator = widths.begin(); widthIterator != widths.end(); ++widthIterator)
     {
         int currentWidth = (*widthIterator);
@@ -145,7 +145,7 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
         int xCurrent;
         int xMin;
         int xMax;
-        if (currentPatchRect.area() > 0)
+        if (failureCounter == 0)
         {
             xCurrent = currentPatchRectCenter.x - (static_cast<int>(round(currentWidth / 2)));
             xMin = std::max((xCurrent - currentWidth), 0);
@@ -167,7 +167,7 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
                 int yCurrent;
                 int yMin;
                 int yMax;
-                if (currentPatchRect.area() > 0)
+                if (failureCounter == 0)
                 {
                     yCurrent = currentPatchRectCenter.y - (static_cast<int>(round(currentHeight / 2)));
                     yMin = std::max((yCurrent - currentHeight), 0);
@@ -180,6 +180,8 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
                     yMin = std::max((yCurrent - (currentHeight * failureScaleFactor)), 0);
                     yMax = std::min((frameHeight - currentHeight), (yCurrent + (currentHeight * failureScaleFactor)));
                 }
+//                std::cout << "xMin = " << xMin << "; xMax = " << xMax + currentWidth
+//                                << "; yMin = " << yMin << "; yMax = " << yMax + currentHeight << std::endl;
                 for (int y = yMin; y < yMax; y += yStep)
                 {
                     testRects.push_back(cv::Rect(x, y, currentWidth, currentHeight));

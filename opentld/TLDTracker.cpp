@@ -15,6 +15,7 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
 {
     cv::Mat frame;
     cv::cvtColor(frameRGB, frame, cv::COLOR_RGB2GRAY);
+//    frame.convertTo(frame, -1, 2, 3);
     cv::blur(frame, frame, cv::Size(3, 3));
     cv::Mat integralFrame;
     cv::integral(frame, integralFrame);
@@ -30,12 +31,19 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
         std::vector<Patch> detectedPatches;
         if ((lastConfidence > trackingConfidence) && (targetRect.area() > 0))
         {
-            trackedPatch = tracker->track(frame, targetRect);
+            Patch patch = tracker->track(frame, targetRect);
+            if ((patch.rect.width >= (targetRect.width * 0.9))
+                            && (patch.rect.width <= (targetRect.width * 1.1))
+                            && (patch.rect.height >= (targetRect.height * 0.9))
+                            && (patch.rect.height <= (targetRect.height * 1.1)))
+            {
+                trackedPatch = patch;
+            }
             detector->detect(frame, trackedPatch.rect, detectedPatches);
         }
         else
         {
-            detector->detect(frame, cv::Rect(0, 0, 0, 0), detectedPatches);
+            detector->detect(frame, targetRect, detectedPatches);
         }
         float maxDetectedConfidence = 0.0f;
         int maxDetectedConfidenceIndex = -1;
@@ -45,7 +53,11 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
             if (confidence > detectedConfidence)
             {
 
-                if (confidence > maxDetectedConfidence)
+                if ((confidence > maxDetectedConfidence)
+                    && (detectedPatches.at(i).rect.width >= (targetRect.width * 0.9))
+                    && (detectedPatches.at(i).rect.width <= (targetRect.width * 1.1))
+                    && (detectedPatches.at(i).rect.height >= (targetRect.height * 0.9))
+                    && (detectedPatches.at(i).rect.height <= (targetRect.height * 1.1)))
                 {
                     maxDetectedConfidence = confidence;
                     maxDetectedConfidenceIndex = i;
@@ -53,7 +65,8 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
             }
         }
         std::cout << "maxDetectedConfidence = " << maxDetectedConfidence << std::endl;
-        if ((trackedPatch.confidence < reinitConfidence) && (maxDetectedConfidence >= reinitConfidence))
+        if (((trackedPatch.confidence < reinitConfidence) && (maxDetectedConfidence >= reinitConfidence))
+                        || (trackedPatch.confidence < maxDetectedConfidence))
         {
             trackedPatch = detectedPatches.at(maxDetectedConfidenceIndex);
         }
