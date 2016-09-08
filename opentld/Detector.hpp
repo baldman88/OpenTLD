@@ -16,6 +16,7 @@
 #include "Patch.hpp"
 #include "Concurrent.hpp"
 #include "KalmanFilter.hpp"
+#include "Constants.hpp"
 
 
 class Detector

@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 #ifdef DEBUG
     std::cout << "This is debug!" << std::endl;
 #endif
-    if (capture.open("/home/baldman/YandexDisk/samples/videos/helicopters/9.mp4") == false)
+    if (capture.open("/home/baldman/YandexDisk/samples/videos/helicopters/7.mp4") == false)
     {
         capture.open(0);
     }

@@ -10,6 +10,7 @@
 #include "Patch.hpp"
 #include "Tracker.hpp"
 #include "Detector.hpp"
+#include "Constants.hpp"
 
 
 class TLDTracker
@@ -26,11 +27,6 @@ private:
     std::shared_ptr<Tracker> tracker;
     double lastConfidence;
     bool isInitialised;
-    const double trackingConfidence;
-    const double reinitConfidence;
-    const double learningConfidence;
-    const double minimumConfidence;
-    const double detectedConfidence;
 };
 
 #endif /* TLDTRACKER_HPP */

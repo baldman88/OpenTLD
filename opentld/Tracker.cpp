@@ -37,8 +37,10 @@ Patch Tracker::track(const cv::Mat &frame, const cv::Rect &patchRect)
     std::vector<uchar> status;
     for (uint i = 0; i < statusForward.size(); ++i)
     {
-        if ((statusForward.at(i) == 1) && (statusBackward.at(i) == 1)
-                && (errorsForward.at(i) < 3.0f) && (errorsBackward.at(i) < 3.0f))
+        if ((statusForward.at(i) == 1)
+            && (statusBackward.at(i) == 1)
+            && (errorsForward.at(i) < 3.0f)
+            && (errorsBackward.at(i) < 3.0f))
         {
             status.push_back(1);
         }
@@ -83,11 +85,12 @@ Patch Tracker::track(const cv::Mat &frame, const cv::Rect &patchRect)
     cv::Mat integralFrame;
     cv::integral(frame, integralFrame);
     trackedPatch.confidence = classifier->classify(integralFrame, trackedPatch.rect);
-    if ((classifier->getRectsOverlap(patchRect, trackedPatch.rect) > classifier->minOverlap)
-            && ((trackedPatch.rect.tl().x >= 0) && (trackedPatch.rect.tl().y >= 0)
-                    && (trackedPatch.rect.br().x < frame.cols) && (trackedPatch.rect.br().y < frame.rows)))
+    if (((trackedPatch.rect.tl().x >= 0)
+        && (trackedPatch.rect.tl().y >= 0)
+        && (trackedPatch.rect.br().x < frame.cols)
+        && (trackedPatch.rect.br().y < frame.rows)))
     {
-        trackedPatch.isOverlaps = true;
+        trackedPatch.overlap = classifier->getRectsOverlap(patchRect, trackedPatch.rect);
     }
     return trackedPatch;
 }

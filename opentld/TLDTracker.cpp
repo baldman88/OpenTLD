@@ -2,8 +2,7 @@
 
 
 TLDTracker::TLDTracker(const int ferns, const int nodes, const double minFeatureScale, const double maxFeatureScale)
-: lastConfidence(1.0), isInitialised(false), trackingConfidence(0.85),
-  reinitConfidence(0.85), learningConfidence(0.9), minimumConfidence(0.7), detectedConfidence(0.9)
+: lastConfidence(1.0), isInitialised(false)
 {
     classifier = std::make_shared<Classifier>(ferns, nodes, minFeatureScale, maxFeatureScale);
     detector = std::make_shared<Detector>(classifier);
@@ -15,7 +14,7 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
 {
     cv::Mat frame;
     cv::cvtColor(frameRGB, frame, cv::COLOR_RGB2GRAY);
-//    frame.convertTo(frame, -1, 2, 3);
+    //    frame.convertTo(frame, -1, 2, 3);
     cv::blur(frame, frame, cv::Size(3, 3));
     cv::Mat integralFrame;
     cv::integral(frame, integralFrame);
@@ -32,32 +31,34 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
         if ((lastConfidence > trackingConfidence) && (targetRect.area() > 0))
         {
             Patch patch = tracker->track(frame, targetRect);
-            if ((patch.rect.width >= (targetRect.width * 0.9))
-                            && (patch.rect.width <= (targetRect.width * 1.1))
-                            && (patch.rect.height >= (targetRect.height * 0.9))
-                            && (patch.rect.height <= (targetRect.height * 1.1)))
+            if ((patch.rect.width >= (targetRect.width * 0.85))
+                && (patch.rect.width <= (targetRect.width * 1.15))
+                && (patch.rect.height >= (targetRect.height * 0.85))
+                && (patch.rect.height <= (targetRect.height * 1.15)))
             {
                 trackedPatch = patch;
             }
-            detector->detect(frame, trackedPatch.rect, detectedPatches);
+            detector->detect(frame, targetRect, detectedPatches);
         }
         else
         {
             detector->detect(frame, targetRect, detectedPatches);
         }
-        float maxDetectedConfidence = 0.0f;
+        float maxDetectedConfidence = 0.0;
         int maxDetectedConfidenceIndex = -1;
         for (size_t i = 0; i < detectedPatches.size(); ++i)
         {
             float confidence = detectedPatches.at(i).confidence;
-            if (confidence > detectedConfidence)
+            if (confidence > detectionConfidence)
             {
 
                 if ((confidence > maxDetectedConfidence)
-                    && (detectedPatches.at(i).rect.width >= (targetRect.width * 0.9))
-                    && (detectedPatches.at(i).rect.width <= (targetRect.width * 1.1))
-                    && (detectedPatches.at(i).rect.height >= (targetRect.height * 0.9))
-                    && (detectedPatches.at(i).rect.height <= (targetRect.height * 1.1)))
+                    && (((targetRect.area() > 0)
+                        && (detectedPatches.at(i).rect.width >= (targetRect.width * 0.9))
+                        && (detectedPatches.at(i).rect.width <= (targetRect.width * 1.1))
+                        && (detectedPatches.at(i).rect.height >= (targetRect.height * 0.9))
+                        && (detectedPatches.at(i).rect.height <= (targetRect.height * 1.1)))
+                        || (targetRect.area() == 0)))
                 {
                     maxDetectedConfidence = confidence;
                     maxDetectedConfidenceIndex = i;
@@ -65,20 +66,31 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
             }
         }
         std::cout << "maxDetectedConfidence = " << maxDetectedConfidence << std::endl;
-        if (((trackedPatch.confidence < reinitConfidence) && (maxDetectedConfidence >= reinitConfidence))
-                        || (trackedPatch.confidence < maxDetectedConfidence))
+        if (((trackedPatch.confidence < reinitConfidence)
+            && (maxDetectedConfidence >= reinitConfidence))
+            || (trackedPatch.confidence < maxDetectedConfidence))
         {
             trackedPatch = detectedPatches.at(maxDetectedConfidenceIndex);
         }
         if (targetRect.area() > 0)
         {
-            if (trackedPatch.confidence >= learningConfidence)
+            if ((trackedPatch.confidence >= learningConfidence)
+                 && (trackedPatch.overlap > conformityOverlap)
+                 && ((targetRect.area() > 0)
+                     && (trackedPatch.rect.width >= (targetRect.width * 0.9))
+                     && (trackedPatch.rect.width <= (targetRect.width * 1.1))
+                     && (trackedPatch.rect.height >= (targetRect.height * 0.9))
+                     && (trackedPatch.rect.height <= (targetRect.height * 1.1))))
             {
                 classifier->trainPositive(frame, trackedPatch.rect);
             }
             for (size_t i = 0; i < detectedPatches.size(); ++i)
             {
-                if (detectedPatches.at(i).confidence < minimumConfidence)
+                if ((detectedPatches.at(i).confidence < negativeConfidence)
+                    || ((targetRect.area() > 0)
+                        && (detectedPatches.at(i).overlap < conformityOverlap))
+                    || ((trackedPatch.rect.area() < (targetRect.area() * 0.85))
+                        || (trackedPatch.rect.area() > (targetRect.area() * 1.15))))
                 {
                     classifier->train(integralFrame, detectedPatches.at(i).rect, false);
                 }

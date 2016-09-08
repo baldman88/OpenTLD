@@ -6,12 +6,12 @@
 
 struct Patch
 {
-    Patch(const cv::Rect &rect = cv::Rect(0, 0, 0, 0), const double confidence = 0.0, const bool isOverlaps = false);
+    Patch(const cv::Rect &rect = cv::Rect(0, 0, 0, 0), const double confidence = 0.0, const double overlap = 0.0);
     bool operator<(const Patch &other) const;
     Patch &operator=(const Patch &other);
     cv::Rect rect;
     double confidence;
-    bool isOverlaps;
+    double overlap;
 };
 
 #endif /* PATCH_HPP */
