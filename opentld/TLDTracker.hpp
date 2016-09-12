@@ -16,7 +16,7 @@
 class TLDTracker
 {
 public:
-    TLDTracker(const int ferns = 8, const int nodes = 8, const double minFeatureScale = 0.2, const double maxFeatureScale = 0.5);
+    TLDTracker(const int ferns = 12, const int nodes = 6, const double minFeatureScale = 0.2, const double maxFeatureScale = 0.5);
     ~TLDTracker() = default;
     cv::Rect getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect);
     void resetTracker();

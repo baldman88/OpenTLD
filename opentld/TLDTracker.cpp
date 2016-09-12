@@ -38,12 +38,8 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
             {
                 trackedPatch = patch;
             }
-            detector->detect(frame, targetRect, detectedPatches);
         }
-        else
-        {
-            detector->detect(frame, targetRect, detectedPatches);
-        }
+        detector->detect(frame, targetRect, detectedPatches);
         float maxDetectedConfidence = 0.0;
         int maxDetectedConfidenceIndex = -1;
         for (size_t i = 0; i < detectedPatches.size(); ++i)
@@ -53,12 +49,12 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
             {
 
                 if ((confidence > maxDetectedConfidence)
-                    && (((targetRect.area() > 0)
+                    /*&& (((targetRect.area() > 0)
                         && (detectedPatches.at(i).rect.width >= (targetRect.width * 0.9))
                         && (detectedPatches.at(i).rect.width <= (targetRect.width * 1.1))
                         && (detectedPatches.at(i).rect.height >= (targetRect.height * 0.9))
                         && (detectedPatches.at(i).rect.height <= (targetRect.height * 1.1)))
-                        || (targetRect.area() == 0)))
+                        || (targetRect.area() == 0))*/)
                 {
                     maxDetectedConfidence = confidence;
                     maxDetectedConfidenceIndex = i;
@@ -76,21 +72,21 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
         {
             if ((trackedPatch.confidence >= learningConfidence)
                  && (trackedPatch.overlap > conformityOverlap)
-                 && ((targetRect.area() > 0)
+                 /*&& ((targetRect.area() > 0)
                      && (trackedPatch.rect.width >= (targetRect.width * 0.9))
                      && (trackedPatch.rect.width <= (targetRect.width * 1.1))
                      && (trackedPatch.rect.height >= (targetRect.height * 0.9))
-                     && (trackedPatch.rect.height <= (targetRect.height * 1.1))))
+                     && (trackedPatch.rect.height <= (targetRect.height * 1.1)))*/)
             {
                 classifier->trainPositive(frame, trackedPatch.rect);
             }
             for (size_t i = 0; i < detectedPatches.size(); ++i)
             {
                 if ((detectedPatches.at(i).confidence < negativeConfidence)
-                    || ((targetRect.area() > 0)
+                    /*|| ((targetRect.area() > 0)
                         && (detectedPatches.at(i).overlap < conformityOverlap))
                     || ((trackedPatch.rect.area() < (targetRect.area() * 0.85))
-                        || (trackedPatch.rect.area() > (targetRect.area() * 1.15))))
+                        || (trackedPatch.rect.area() > (targetRect.area() * 1.15)))*/)
                 {
                     classifier->train(integralFrame, detectedPatches.at(i).rect, false);
                 }
