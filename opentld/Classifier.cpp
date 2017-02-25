@@ -3,7 +3,6 @@
 
 
 Classifier::Classifier(const int fernsCount, const int featuresCount, const double minFeatureScale, const double maxFeatureScale)
-    : minOverlap(0.6)
 {
     for (int fern = 0; fern < fernsCount; ++fern)
     {
@@ -41,7 +40,7 @@ void Classifier::trainNegative(const cv::Mat &frame, const cv::Rect &patchRect)
             for (int y = yMin; y < yMax; y += yStep)
             {
                 cv::Rect negativePatchRect(x, y, currentWidth, currentHeight);
-                if (getRectsOverlap(patchRect, negativePatchRect) < minOverlap)
+                if (getRectsOverlap(patchRect, negativePatchRect) < minimumOverlap)
                 {
                     train(frame, negativePatchRect, false);
                 }
@@ -85,8 +84,10 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
         for (maxAngle = 10.0; maxAngle >= 0.0; maxAngle -= 1.0)
         {
             warpFrameRect = cv::RotatedRect(patchRectCenter, warpFrameSize, maxAngle).boundingRect();
-            if ((warpFrameRect.tl().x >= 0) && (warpFrameRect.tl().y >= 0) &&
-                    (warpFrameRect.br().x < frame.cols) && (warpFrameRect.br().y < frame.rows))
+            if ((warpFrameRect.tl().x >= 0)
+                && (warpFrameRect.tl().y >= 0)
+                && (warpFrameRect.br().x < frame.cols)
+                && (warpFrameRect.br().y < frame.rows))
             {
                 break;
             }
@@ -121,9 +122,10 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
                         int x = warpPatchRectCenter.x - (width / 2) + xOffset;
                         int y = warpPatchRectCenter.y - (height / 2) + yOffset;
                         cv::Rect testPatchRect(x, y, width, height);
-                        if ((testPatchRect.tl().x >= 0) && (testPatchRect.tl().y >= 0)
-                                && (testPatchRect.br().x < warpFrameRect.width)
-                                && (testPatchRect.br().y < warpFrameRect.height))
+                        if ((testPatchRect.tl().x >= 0)
+                            && (testPatchRect.tl().y >= 0)
+                            && (testPatchRect.br().x < warpFrameRect.width)
+                            && (testPatchRect.br().y < warpFrameRect.height))
                         {
                             positivePatches.push_back(cv::Rect(x, y, width, height));
                         }
