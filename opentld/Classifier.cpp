@@ -28,13 +28,13 @@ void Classifier::trainNegative(const cv::Mat &frame, const cv::Rect &patchRect)
     for (double scale = minScale; scale <= maxScale; scale += scaleStep)
     {
         int xMin = 0;
-        int currentWidth = static_cast<int>(scale * patchRect.width);
+        int currentWidth = static_cast<int>(round(scale * patchRect.width));
         int xMax = frame.cols - currentWidth;
         int xStep = 10;
         for (int x = xMin; x < xMax; x += xStep)
         {
             int yMin = 0;
-            int currentHeight = static_cast<int>(scale * patchRect.height);
+            int currentHeight = static_cast<int>(round(scale * patchRect.height));
             int yMax = frame.rows - currentHeight;
             int yStep = 10;
             for (int y = yMin; y < yMax; y += yStep)
@@ -59,17 +59,17 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
 
     for (double scale = 0.95; scale <= 1.05; scale += 0.05)
     {
-        int width = patchRect.width * scale;
-        int minX = (patchRectCenter.x - (width / 2)) - 3;
-        int maxX = (patchRectCenter.x + (width / 2)) + 3;
+        int width = static_cast<int>(round(patchRect.width * scale));
+        int minX = (patchRectCenter.x - static_cast<int>(round(width / 2))) - 3;
+        int maxX = (patchRectCenter.x + static_cast<int>(round(width / 2))) + 3;
         if ((minX >= 0) && (maxX < frame.cols))
         {
             widths.insert(width);
         }
 
-        int height = patchRect.height * scale;
-        int minY = (patchRectCenter.y - (height / 2)) - 3;
-        int maxY = (patchRectCenter.y + (height / 2)) + 3;
+        int height = static_cast<int>(round(patchRect.height * scale));
+        int minY = (patchRectCenter.y - static_cast<int>(round(height / 2))) - 3;
+        int maxY = (patchRectCenter.y + static_cast<int>(round(height / 2))) + 3;
         if ((minY >= 0) && (maxY < frame.rows))
         {
             heights.insert(height);
@@ -119,8 +119,8 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
                 {
                     for (int yOffset = -1; yOffset <= 1; yOffset += 1)
                     {
-                        int x = warpPatchRectCenter.x - (width / 2) + xOffset;
-                        int y = warpPatchRectCenter.y - (height / 2) + yOffset;
+                        int x = warpPatchRectCenter.x - static_cast<int>(round(width / 2)) + xOffset;
+                        int y = warpPatchRectCenter.y - static_cast<int>(round(height / 2)) + yOffset;
                         cv::Rect testPatchRect(x, y, width, height);
                         if ((testPatchRect.tl().x >= 0)
                             && (testPatchRect.tl().y >= 0)

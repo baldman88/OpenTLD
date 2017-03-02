@@ -31,10 +31,10 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
         if ((lastConfidence > trackingConfidence) && (targetRect.area() > 0))
         {
             Patch patch = tracker->track(frame, targetRect);
-            if ((patch.rect.width >= (targetRect.width * 0.85))
-                && (patch.rect.width <= (targetRect.width * 1.15))
-                && (patch.rect.height >= (targetRect.height * 0.85))
-                && (patch.rect.height <= (targetRect.height * 1.15)))
+            if ((patch.rect.width >= static_cast<int>(round(targetRect.width * 0.85)))
+                && (patch.rect.width <= static_cast<int>(round(targetRect.width * 1.15)))
+                && (patch.rect.height >= static_cast<int>(round(targetRect.height * 0.85)))
+                && (patch.rect.height <= static_cast<int>(round(targetRect.height * 1.15))))
             {
                 trackedPatch = patch;
             }
@@ -50,10 +50,10 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
 
                 if ((confidence > maxDetectedConfidence)
                     /*&& (((targetRect.area() > 0)
-                        && (detectedPatches.at(i).rect.width >= (targetRect.width * 0.9))
-                        && (detectedPatches.at(i).rect.width <= (targetRect.width * 1.1))
-                        && (detectedPatches.at(i).rect.height >= (targetRect.height * 0.9))
-                        && (detectedPatches.at(i).rect.height <= (targetRect.height * 1.1)))
+                        && (detectedPatches.at(i).rect.width >= static_cast<int>(round(targetRect.width * 0.9)))
+                        && (detectedPatches.at(i).rect.width <= static_cast<int>(round(targetRect.width * 1.1)))
+                        && (detectedPatches.at(i).rect.height >= static_cast<int>(round(targetRect.height * 0.9)))
+                        && (detectedPatches.at(i).rect.height <= static_cast<int>(round(targetRect.height * 1.1))))
                         || (targetRect.area() == 0))*/)
                 {
                     maxDetectedConfidence = confidence;
@@ -73,10 +73,10 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
             if ((trackedPatch.confidence >= learningConfidence)
                  && (trackedPatch.overlap > conformityOverlap)
                  /*&& ((targetRect.area() > 0)
-                     && (trackedPatch.rect.width >= (targetRect.width * 0.9))
-                     && (trackedPatch.rect.width <= (targetRect.width * 1.1))
-                     && (trackedPatch.rect.height >= (targetRect.height * 0.9))
-                     && (trackedPatch.rect.height <= (targetRect.height * 1.1)))*/)
+                     && (trackedPatch.rect.width >= static_cast<int>(round(targetRect.width * 0.9)))
+                     && (trackedPatch.rect.width <= static_cast<int>(round(targetRect.width * 1.1)))
+                     && (trackedPatch.rect.height >= static_cast<int>(round(targetRect.height * 0.9)))
+                     && (trackedPatch.rect.height <= static_cast<int>(round(targetRect.height * 1.1))))*/)
             {
                 classifier->trainPositive(frame, trackedPatch.rect);
             }
@@ -85,8 +85,8 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
                 if ((detectedPatches.at(i).confidence < negativeConfidence)
                     /*|| ((targetRect.area() > 0)
                         && (detectedPatches.at(i).overlap < conformityOverlap))
-                    || ((trackedPatch.rect.area() < (targetRect.area() * 0.85))
-                        || (trackedPatch.rect.area() > (targetRect.area() * 1.15)))*/)
+                    || ((trackedPatch.rect.area() < static_cast<int>(round(targetRect.area() * 0.85)))
+                        || (trackedPatch.rect.area() > static_cast<int>(round(targetRect.area() * 1.15))))*/)
                 {
                     classifier->train(integralFrame, detectedPatches.at(i).rect, false);
                 }
