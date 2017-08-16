@@ -8,35 +8,27 @@ Fern::Fern(const int featuresCount, const double minScale, const double maxScale
         features.push_back(std::make_shared<Feature>(minScale, maxScale));
     }
     leafsCount = pow(4, featuresCount);
-    positives = std::vector<std::atomic<int>>(leafsCount);
-    negatives = std::vector<std::atomic<int>>(leafsCount);
-    posteriors = std::vector<std::atomic<double>>(leafsCount);
+    leafs = std::vector<Leaf>(leafsCount);
 }
 
 
 void Fern::train(const cv::Mat &frame, const cv::Rect &patchRect, const bool isPositive)
 {
     int leaf = getLeafIndex(frame, patchRect);
-//    std::lock_guard<std::mutex> lock(mutex);
     if (isPositive == true)
     {
-        (positives[leaf]).store(positives.at(leaf).load() + 1);
+        leafs[leaf].increment();
     }
     else
     {
-        (negatives[leaf]).store(negatives.at(leaf).load() + 1);
-    }
-
-    if (positives.at(leaf).load() > 0)
-    {
-        (posteriors[leaf]).store(static_cast<double>(positives.at(leaf).load()) / (positives.at(leaf).load() + negatives.at(leaf).load()));
+        leafs[leaf].decrement();
     }
 }
 
 
 double Fern::classify(const cv::Mat &frame, const cv::Rect &patchRect) const
 {
-    return posteriors.at(getLeafIndex(frame, patchRect)).load();
+    return leafs.at(getLeafIndex(frame, patchRect)).load();
 }
 
 
@@ -55,7 +47,8 @@ int Fern::getLeafIndex(const cv::Mat &frame, const cv::Rect &patchRect) const
 
 void Fern::reset()
 {
-    positives = std::vector<std::atomic<int>>(leafsCount);
-    negatives = std::vector<std::atomic<int>>(leafsCount);
-    posteriors = std::vector<std::atomic<double>>(leafsCount);
+    for (int leaf = 0; leaf < leafsCount; ++leaf)
+    {
+        leafs[leaf].reset();
+    }
 }

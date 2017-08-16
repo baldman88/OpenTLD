@@ -10,6 +10,7 @@
 
 #include "Concurrent.hpp"
 #include "Fern.hpp"
+#include "Constants.hpp"
 
 
 class Classifier
@@ -23,7 +24,6 @@ public:
     double getRectsOverlap(const cv::Rect &first, const cv::Rect &second) const;
     cv::Point2f getRectCenter(const cv::Rect &rect) const;
     void trainPositive(const cv::Mat &frame, const cv::Rect &patchRect);
-    const double minOverlap;
 
 private:
     std::vector<std::shared_ptr<Fern>> ferns;

@@ -2,14 +2,12 @@
 #define FERN_HPP
 
 #include <vector>
-#include <mutex>
-#include <memory>
 #include <iostream>
-#include <atomic>
 
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include "Feature.hpp"
+#include "Leaf.hpp"
 
 class Fern
 {
@@ -23,10 +21,7 @@ public:
 private:
     int leafsCount;
     std::vector<std::shared_ptr<Feature>> features;
-    std::vector<std::atomic<double>> posteriors;
-    std::vector<std::atomic<int>> positives;
-    std::vector<std::atomic<int>> negatives;
-    std::mutex mutex;
+    std::vector<Leaf> leafs;
     int getLeafIndex(const cv::Mat &frame, const cv::Rect &patchRect) const;
 };
 

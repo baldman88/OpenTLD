@@ -3,40 +3,20 @@
 
 
 Detector::Detector(std::shared_ptr<Classifier> &classifier)
-    : classifier(classifier), patchRectWidth(0), patchRectHeight(0), varianceThreshold(0),
-      frameWidth(0), frameHeight(0), minSideSize(16), maxSideSize(120), currentZoneIndex(0) {}
+: classifier(classifier), patchRectWidth(0), patchRectHeight(0), varianceThreshold(0),
+  frameWidth(0), frameHeight(0), minSideSize(16), maxSideSize(120),
+  failureCounter(0), failureScaleFactor(0) {}
 
 
 void Detector::init(const cv::Mat &frame, const cv::Rect &patchRect)
 {
     frameWidth = frame.cols;
     frameHeight = frame.rows;
-    lastPatch = patchRect;
+    lastPatchRect = patchRect;
+    failureCounter = 0;
+    filter.reset();
     setVarianceThreshold(frame, patchRect);
-    if (zones.size() == 0)
-    {
-        int widthStep = frameWidth / 4;
-        int heightStep = frameHeight / 4;
-        int zoneWidth = frameWidth / 2;
-        int zoneHeight = frameHeight / 2;
-        for (int i = 0; i < 3; ++i)
-        {
-            for (int j = 0; j < 3; ++j)
-            {
-                int startX = i * widthStep;
-                int startY = j * heightStep;
-                zones.push_back(cv::Rect(startX, startY, zoneWidth, zoneHeight));
-            }
-        }
-    }
-    cv::Point patchRectCenter = classifier->getRectCenter(patchRect);
-    currentZoneIndex = getZoneIndex(patchRectCenter);
     std::cout << frameWidth << "; " << frameHeight << std::endl;
-    for (size_t i = 0; i < zones.size(); ++i)
-    {
-        std::cout << "Zone_" << i << " = (" << zones[i].x << ", " << zones[i].y << ", "
-                << zones[i].width << ", " << zones[i].height << ")" << std::endl;
-    }
 }
 
 
@@ -49,142 +29,182 @@ void Detector::setVarianceThreshold(const cv::Mat &frame, const cv::Rect &patchR
 }
 
 
+cv::Rect Detector::getCurrentPatchRect(const cv::Rect &patchRect)
+{
+    cv::Rect currentPatchRect(0, 0, 0, 0);
+
+    if ((patchRect.width >= minSideSize) && (patchRect.height >= minSideSize)
+        && (patchRect.width <= maxSideSize) && (patchRect.height <= maxSideSize)
+        && (patchRect.x >= 0) && (patchRect.y >= 0)
+        && ((patchRect.x + patchRect.width) < frameWidth)
+        && ((patchRect.y + patchRect.height) < frameHeight))
+    {
+        currentPatchRect = patchRect;
+    }
+    else
+    {
+        std::cout << "====== patchRect = (" << patchRect.x << ", " << patchRect.y
+            << ", " << patchRect.width << ", " << patchRect.height << ")" << std::endl;
+        ++failureCounter;
+    }
+
+    if ((currentPatchRect.width >= (lastPatchRect.width * 0.85))
+        && (currentPatchRect.width <= (lastPatchRect.width * 1.15))
+        && (currentPatchRect.height >= (lastPatchRect.height * 0.85))
+        && (currentPatchRect.height <= (lastPatchRect.height * 1.15)))
+    {
+        lastPatchRect = currentPatchRect;
+        failureCounter = 0;
+    }
+    //    else if ((currentPatchRect.width >= (lastPatchRect.width * 0.75))
+    //            && (currentPatchRect.width <= (lastPatchRect.width * 1.25))
+    //            && (currentPatchRect.height >= (lastPatchRect.height * 0.75))
+    //            && (currentPatchRect.height <= (lastPatchRect.height * 1.25)))
+    //    {
+    //        currentPatchRect = lastPatchRect;
+    //    }
+    else
+    {
+        currentPatchRect = lastPatchRect;
+    }
+
+    predictedPatchRect = filter.predict(currentPatchRect);
+    std::cout << ">>> patchRect = (" << patchRect.x << ", " << patchRect.y << ", "
+        << patchRect.width << ", " << patchRect.height << ")" << std::endl;
+    std::cout << ">>> currentPatchRect = (" << currentPatchRect.x << ", " << currentPatchRect.y << ", "
+        << currentPatchRect.width << ", " << currentPatchRect.height << ")" << std::endl;
+    std::cout << ">>> predictedPatchRect = (" << predictedPatchRect.x << ", " << predictedPatchRect.y << ", "
+        << predictedPatchRect.width << ", " << predictedPatchRect.height << ")" << std::endl;
+    if ((currentPatchRect.area() == 0)
+        && (predictedPatchRect.width >= (lastPatchRect.width * 0.95))
+        && (predictedPatchRect.width <= (lastPatchRect.width * 1.05))
+        && (predictedPatchRect.height >= (lastPatchRect.height * 0.95))
+        && (predictedPatchRect.height <= (lastPatchRect.height * 1.05))
+        && (predictedPatchRect.x >= 0)
+        && (predictedPatchRect.y >= 0)
+        && ((predictedPatchRect.x + predictedPatchRect.width)  < frameWidth)
+        && ((predictedPatchRect.y + predictedPatchRect.height) < frameHeight))
+    {
+        //        currentPatchRect = predictedPatchRect;
+    }
+
+    return currentPatchRect;
+}
+
+
 void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vector<Patch> &patches)
 {
     std::cout << "***Detector***" << std::endl;
+    std::cout << "failureScaleFactor = " << failureScaleFactor << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
 
-    if ((patchRect.width >= minSideSize) && (patchRect.height >= minSideSize)
-                    && (patchRect.width <= maxSideSize) && (patchRect.height <= maxSideSize)
-                    && (patchRect.width < frame.cols) && (patchRect.height < frame.rows)
-                    && (patchRect.x >= 0) && (patchRect.y >= 0)
-                    && ((patchRect.x + patchRect.width) < frame.cols)
-                    && ((patchRect.y + patchRect.height) < frame.rows))
-    {
-        currentPatch = patchRect;
-    }
-    else
-    {
-        currentPatch = cv::Rect(0, 0, 0, 0);
-    }
-
-    double minScale = 0.95;
-    double maxScale = 1.05;
-    double scaleStep = 0.05;
-    if ((currentPatch.width >= (lastPatch.width * minScale))
-            && (currentPatch.width <= (lastPatch.width * maxScale))
-            && (currentPatch.height >= (lastPatch.height * minScale))
-            && (currentPatch.height <= (lastPatch.height * maxScale)))
-    {
-        lastPatch = currentPatch;
-    }
-    else if ((currentPatch.width >= (lastPatch.width * 0.75))
-            && (currentPatch.width <= (lastPatch.width * 1.25))
-            && (currentPatch.height >= (lastPatch.height * 0.75))
-            && (currentPatch.height <= (lastPatch.height * 1.25)))
-    {
-        currentPatch = lastPatch;
-    }
-    else
-    {
-        currentPatch = cv::Rect(0, 0, 0, 0);
-        minScale = 0.9;
-        maxScale = 1.1;
-    }
-
-    cv::Rect predictedPatch = filter.predict(currentPatch);
-    if ((currentPatch.area() == 0)
-            && (predictedPatch.width >= (lastPatch.width * minScale))
-            && (predictedPatch.width <= (lastPatch.width * maxScale))
-            && (predictedPatch.height >= (lastPatch.height * minScale))
-            && (predictedPatch.height <= (lastPatch.height * maxScale))
-            && (predictedPatch.x >= 0)
-            && (predictedPatch.y >= 0)
-            && ((predictedPatch.x + predictedPatch.width)  < frame.cols)
-            && ((predictedPatch.y + predictedPatch.height) < frame.rows))
-    {
-        currentPatch = predictedPatch;
-        std::cout << ">>> lastPatch = (" << lastPatch.x << ", " << lastPatch.y << ", "
-                << lastPatch.width << ", " << lastPatch.height << ")" << std::endl;
-        std::cout << ">>> predictedPatch = (" << predictedPatch.x << ", " << predictedPatch.y << ", "
-                << predictedPatch.width << ", " << predictedPatch.height << ")" << std::endl;
-    }
+    cv::Rect currentPatchRect = getCurrentPatchRect(patchRect);
 
     std::set<int> widths;
     std::set<int> heights;
 
+    double minScale = 0.95;
+    double maxScale = 1.05;
+    double scaleStep = 0.05;
+
+//    if ((currentPatchRect.x != patchRect.x)
+//        || (currentPatchRect.y != patchRect.y)
+//        || (currentPatchRect.width != patchRect.width)
+//        || (currentPatchRect.height != patchRect.height))
+//    {
+//        minScale = 0.9;
+//        maxScale = 1.1;
+//    }
+
     for (double scale = minScale; scale <= maxScale; scale += scaleStep)
     {
-        widths.insert(lastPatch.width * scale);
-        heights.insert(lastPatch.height * scale);
+        widths.insert(static_cast<int>(round(lastPatchRect.width * scale)));
+        heights.insert(static_cast<int>(round(lastPatchRect.height * scale)));
     }
 
-    std::vector<cv::Rect> testRects;
     double stepDevider = 20.0;
-    cv::Point patchRectCenter = classifier->getRectCenter(lastPatch);
+    currentPatchRectCenter = classifier->getRectCenter(currentPatchRect);
+    predictedPatchRectCenter = classifier->getRectCenter(predictedPatchRect);
 
-    uint64_t total = 0;
+    cv::Mat integralFrame;
+    cv::Mat squareIntegralFrame;
+    cv::integral(frame, integralFrame, squareIntegralFrame);
+    //    int xStart = std::max((currentPatchRectCenter.x - (currentPatchRect.width / 2) - currentPatchRect.width), 0);
+    //    int yStart = std::max((currentPatchRectCenter.y - (currentPatchRect.height / 2) - currentPatchRect.height), 0);
+    //    int xStop = std::min((frameWidth - currentPatchRect.width),
+    //                         (currentPatchRectCenter.x - (currentPatchRect.width / 2) + currentPatchRect.width));
+    //    int yStop = std::min((frameHeight - currentPatchRect.height),
+    //                         (currentPatchRectCenter.y - (currentPatchRect.height / 2) + currentPatchRect.height));
+    //    varianceThreshold = getPatchVariance(integralFrame, squareIntegralFrame,
+    //                                         cv::Rect(xStart, yStart, (xStop - xStart), (yStop - yStart)));
 
+    std::vector<cv::Rect> testRects;
+    failureScaleFactor = std::max((failureCounter / 20), 1);
     for (auto widthIterator = widths.begin(); widthIterator != widths.end(); ++widthIterator)
     {
         int currentWidth = (*widthIterator);
         int xStep = static_cast<int>(round(currentWidth / stepDevider));
-        int xCurrent = patchRectCenter.x - (currentWidth / 2);
-        int xMin = std::max((xCurrent - currentWidth), 0);
-        int xMax = std::min((frameWidth - currentWidth), (xCurrent + currentWidth));
-        if (currentPatch.area() == 0)
+        int xCurrent;
+        int xMin;
+        int xMax;
+        if (failureCounter == 0)
         {
-            xMin = zones[currentZoneIndex].x;
-            xMax = xMin + zones[currentZoneIndex].width - currentWidth;
+            xCurrent = currentPatchRectCenter.x - (static_cast<int>(round(currentWidth / 2.0)));
+            xMin = std::max((xCurrent - static_cast<int>(round(currentWidth / 2.0))), 0);
+            xMax = std::min((frameWidth - static_cast<int>(round(currentWidth / 2.0))),
+                            (xCurrent + static_cast<int>(round(currentWidth / 2.0))));
+        }
+        else
+        {
+            //            xCurrent = ((currentPatchRectCenter.x + predictedPatchRectCenter.x) / 2) - (currentWidth / 2);
+            xCurrent = currentPatchRectCenter.x - (static_cast<int>(round(currentWidth / 2.0)));
+            xMin = std::max((xCurrent - (static_cast<int>(round(currentWidth / 2.0)) * failureScaleFactor)), 0);
+            xMax = std::min((frameWidth - static_cast<int>(round(currentWidth / 2.0))),
+                            (xCurrent + (static_cast<int>(round(currentWidth / 2.0)) * failureScaleFactor)));
         }
         for (int x = xMin; x < xMax; x += xStep)
         {
             for (auto heightIterator = heights.begin(); heightIterator != heights.end(); ++heightIterator)
             {
                 int currentHeight = (*heightIterator);
-                int yCurrent = patchRectCenter.y - (currentHeight / 2);
-                int yMin = std::max((yCurrent - currentHeight), 0);
-                int yMax = std::min((frameHeight - currentHeight), (yCurrent + currentHeight));
                 int yStep = static_cast<int>(round(currentHeight / stepDevider));
-                if (currentPatch.area() == 0)
+                int yCurrent;
+                int yMin;
+                int yMax;
+                if (failureCounter == 0)
                 {
-                    yMin = zones[currentZoneIndex].y;
-                    yMax = yMin + zones[currentZoneIndex].height - currentHeight;
+                    yCurrent = currentPatchRectCenter.y - (static_cast<int>(round(currentHeight / 2.0)));
+                    yMin = std::max((yCurrent - static_cast<int>(round(currentHeight / 2.0))), 0);
+                    yMax = std::min((frameHeight - static_cast<int>(round(currentHeight / 2.0))),
+                                    (yCurrent + static_cast<int>(round(currentHeight / 2.0))));
                 }
+                else
+                {
+                    //                    yCurrent = ((currentPatchRectCenter.y + predictedPatchRectCenter.y) / 2) - (currentHeight / 2);
+                    yCurrent = currentPatchRectCenter.y - (static_cast<int>(round(currentHeight / 2.0)));
+                    yMin = std::max((yCurrent - (static_cast<int>(round(currentHeight / 2.0)) * failureScaleFactor)), 0);
+                    yMax = std::min((frameHeight - static_cast<int>(round(currentHeight / 2.0))),
+                                    (yCurrent + (static_cast<int>(round(currentHeight / 2.0)) * failureScaleFactor)));
+                }
+//                std::cout << "xMin = " << xMin << "; xMax = " << xMax + currentWidth
+//                    << "; yMin = " << yMin << "; yMax = " << yMax + currentHeight << std::endl;
                 for (int y = yMin; y < yMax; y += yStep)
                 {
                     testRects.push_back(cv::Rect(x, y, currentWidth, currentHeight));
-                    total++;
                 }
             }
         }
     }
-    if (currentPatch.area() > 0)
-    {
-        currentZoneIndex = getZoneIndex(patchRectCenter);
-    }
-    else
-    {
-        currentZoneIndex++;
-        if (currentZoneIndex == zones.size())
-        {
-            currentZoneIndex = 0;
-        }
-    }
-    std::cout << "currentZoneIndex = " << currentZoneIndex << std::endl;
     std::cout << "testRects.size() = " << testRects.size() << std::endl;
-    std::cout << "total = " << total << std::endl;
-    cv::Mat integralFrame;
-    cv::Mat squareIntegralFrame;
-    cv::integral(frame, integralFrame, squareIntegralFrame);
-    auto end = concurrent::blockingFilter(testRects.begin(), testRects.end(),
-                                          std::bind(&Detector::checkPatchVariace, this,
-                                                    integralFrame, squareIntegralFrame, std::placeholders::_1));
-    testRects.erase(end, testRects.end());
-    std::cout << "testRects.size() = " << testRects.size() << std::endl;
+    //    auto end = concurrent::blockingFilter(testRects.begin(), testRects.end(),
+    //                                          std::bind(&Detector::checkPatchVariace, this,
+    //                                                    integralFrame, squareIntegralFrame, std::placeholders::_1));
+    //    testRects.erase(end, testRects.end());
+    //    std::cout << "testRects.size() = " << testRects.size() << std::endl;
     patches.resize(testRects.size());
     concurrent::blockingMapped(testRects.begin(), testRects.end(), patches.begin(),
-                               std::bind(&Detector::getPatch, this, std::placeholders::_1, integralFrame, patchRect));
+                               std::bind(&Detector::getPatch, this, std::placeholders::_1, integralFrame, currentPatchRect));
+    std::cout << "patches.size() = " << patches.size() << std::endl;
     if (patches.size() > 0)
     {
         auto end = concurrent::blockingFilter(patches.begin(), patches.end(),
@@ -195,131 +215,8 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
     std::cout << "patches.size() = " << patches.size() << std::endl;
     std::cout << "Detector elapsed = " << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
     std::cout << "***Detector***\n" << std::endl;
+    //    patches.push_back(Patch(predictedPatchRect, 0, false));
 }
-
-
-//void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vector<Patch> patches)
-//{
-//    std::cout << "***Detector***" << std::endl;
-//    auto start = std::chrono::high_resolution_clock::now();
-//
-//    if ((patchRect.width >= minSideSize) && (patchRect.height >= minSideSize)
-//        && (patchRect.width < frame.cols) && (patchRect.height < frame.rows)
-//        && (patchRect.x >= 0) && (patchRect.y >= 0)
-//        && ((patchRect.x + patchRect.width) < frame.cols)
-//        && ((patchRect.y + patchRect.height) < frame.rows))
-//    {
-//        currentPatch = patchRect;
-//    }
-//    else
-//    {
-//        currentPatch = cv::Rect(0, 0, 0, 0);
-//    }
-//
-//    if (currentPatch.area() > 0)
-//    {
-//        lastPatch = currentPatch;
-//    }
-//
-//    double minScale;
-//    double maxScale;
-//    double scaleStep = 0.05;
-//    if (currentPatch.area() > 0)
-//    {
-//        minScale = 0.95;
-//        maxScale = 1.05;
-//    }
-//    else
-//    {
-//        minScale = 0.9;
-//        maxScale = 1.1;
-//    }
-//
-//    std::set<int> widths;
-//    std::set<int> heights;
-//
-//    for (double scale = minScale; scale <= maxScale; scale += scaleStep)
-//    {
-//        widths.insert(lastPatch.width * scale);
-//        heights.insert(lastPatch.height * scale);
-//    }
-//
-//    std::vector<cv::Rect> testRects;
-//    double stepDevider = 20.0;
-//    cv::Point patchRectCenter = classifier->getRectCenter(lastPatch);
-//    std::random_device randomDevice;
-//    std::mt19937 randomEngine(randomDevice());
-//
-//    uint64_t total = 0;
-//    if (currentPatch.area() > 0)
-//    {
-//        currentZoneIndex = getZoneIndex(patchRectCenter);
-//    }
-//
-//    std::uniform_int_distribution<int> distributionX(0, std::max((frameWidth - (*(widths.begin()) * 3)), 0));
-//    std::uniform_int_distribution<int> distributionY(0, std::max((frameHeight - (*(heights.begin()) * 3)), 0));
-//    int xOffset = distributionX(randomEngine);
-//    int yOffset = distributionY(randomEngine);
-//
-//    for (auto widthIterator = widths.begin(); widthIterator != widths.end(); ++widthIterator)
-//    {
-//        int currentWidth = (*widthIterator);
-//        int xStep = static_cast<int>(round(currentWidth / stepDevider));
-//        int xCurrent = patchRectCenter.x - (currentWidth / 2);
-//        int xMin = std::max((xCurrent - currentWidth), 0);
-//        int xMax = std::min((frameWidth - currentWidth), (xCurrent + currentWidth));
-//        if (currentPatch.area() == 0)
-//        {
-//            std::cout << "Here!" << std::endl;
-//            xMin += xOffset;
-//            xMax = std::min((xMin + (currentWidth * 2)), (frameWidth - currentWidth));
-//        }
-//        for (int x = xMin; x < xMax; x += xStep)
-//        {
-//            for (auto heightIterator = heights.begin(); heightIterator != heights.end(); ++heightIterator)
-//            {
-//                int currentHeight = (*heightIterator);
-//                int yCurrent = patchRectCenter.y - (currentHeight / 2);
-//                int yMin = std::max((yCurrent - currentHeight), 0);
-//                int yMax = std::min((frameHeight - currentHeight), (yCurrent + currentHeight));
-//                int yStep = static_cast<int>(round(currentHeight / stepDevider));
-//                if (currentPatch.area() == 0)
-//                {
-//                    yMin += yOffset;
-//                    yMax = std::min((yMin + (currentHeight * 2)), (frameHeight - currentHeight));
-//                }
-//                for (int y = yMin; y < yMax; y += yStep)
-//                {
-//                    testRects.push_back(cv::Rect(x, y, currentWidth, currentHeight));
-//                    total++;
-//                }
-//            }
-//        }
-//    }
-//    std::cout << "xOffset = " << xOffset << "; yOffset = " << yOffset << std::endl;
-//    std::cout << "testRects.size() = " << testRects.size() << std::endl;
-//    std::cout << "total = " << total << std::endl;
-//    cv::Mat integralFrame;
-//    cv::Mat squareIntegralFrame;
-//    cv::integral(frame, integralFrame, squareIntegralFrame);
-//    auto end = concurrent::blockingFilter(testRects.begin(), testRects.end(),
-//                                          std::bind(&Detector::checkPatchVariace, this,
-//                                                    integralFrame, squareIntegralFrame, std::placeholders::_1));
-//    testRects.erase(end, testRects.end());
-//    patches.resize(testRects.size());
-//    concurrent::blockingMapped(testRects.begin(), testRects.end(), patches.begin(),
-//                               std::bind(&Detector::getPatch, this, std::placeholders::_1, integralFrame, patchRect));
-//    if (patches.size() > 0)
-//    {
-//        auto end = concurrent::blockingFilter(patches.begin(), patches.end(),
-//                                              std::bind(&Detector::checkPatchConformity, this, std::placeholders::_1));
-//        patches.erase(end, patches.end());
-//    }
-//    auto stop = std::chrono::high_resolution_clock::now();
-//    std::cout << "patches.size() = " << patches.size() << std::endl;
-//    std::cout << "Detector elapsed = " << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
-//    std::cout << "***Detector***\n" << std::endl;
-//}
 
 
 double Detector::getPatchVariance(const cv::Mat &integralFrame, const cv::Mat &squareIntegralFrame, const cv::Rect &patchRect) const
@@ -329,13 +226,13 @@ double Detector::getPatchVariance(const cv::Mat &integralFrame, const cv::Mat &s
     if (area > 0)
     {
         double mean = (integralFrame.at<int>(cv::Point(patchRect.x, patchRect.y))
-                        + integralFrame.at<int>(cv::Point(patchRect.x + patchRect.width, patchRect.y + patchRect.height))
-                        - integralFrame.at<int>(cv::Point(patchRect.x + patchRect.width, patchRect.y))
-                        - integralFrame.at<int>(cv::Point(patchRect.x, patchRect.y + patchRect.height))) / area;
+            + integralFrame.at<int>(cv::Point(patchRect.x + patchRect.width, patchRect.y + patchRect.height))
+            - integralFrame.at<int>(cv::Point(patchRect.x + patchRect.width, patchRect.y))
+            - integralFrame.at<int>(cv::Point(patchRect.x, patchRect.y + patchRect.height))) / area;
         double deviance = (squareIntegralFrame.at<double>(cv::Point(patchRect.x, patchRect.y))
-                        + squareIntegralFrame.at<double>(cv::Point(patchRect.x + patchRect.width, patchRect.y + patchRect.height))
-                        - squareIntegralFrame.at<double>(cv::Point(patchRect.x + patchRect.width, patchRect.y))
-                        - squareIntegralFrame.at<double>(cv::Point(patchRect.x, patchRect.y + patchRect.height))) / area;
+            + squareIntegralFrame.at<double>(cv::Point(patchRect.x + patchRect.width, patchRect.y + patchRect.height))
+            - squareIntegralFrame.at<double>(cv::Point(patchRect.x + patchRect.width, patchRect.y))
+            - squareIntegralFrame.at<double>(cv::Point(patchRect.x, patchRect.y + patchRect.height))) / area;
         variance = deviance - (mean * mean);
     }
     return variance;
@@ -345,10 +242,10 @@ double Detector::getPatchVariance(const cv::Mat &integralFrame, const cv::Mat &s
 Patch Detector::getPatch(const cv::Rect &testRect, const cv::Mat &frame, const cv::Rect &patchRect) const
 {
     double confidence = classifier->classify(frame, testRect);
-    bool overlap = false;
-    if ((patchRect.area() > 0) && (classifier->getRectsOverlap(patchRect, testRect) > classifier->minOverlap))
+    double overlap = 0.0;
+    if (patchRect.area() > 0)
     {
-        overlap = true;
+        overlap = classifier->getRectsOverlap(patchRect, testRect);
     }
     return Patch(testRect, confidence, overlap);
 }
@@ -357,7 +254,7 @@ Patch Detector::getPatch(const cv::Rect &testRect, const cv::Mat &frame, const c
 bool Detector::checkPatchConformity(const Patch &patch) const
 {
     bool result = false;
-    if ((patch.confidence > 0.6f) || (patch.isOverlaps == true))
+    if ((patch.confidence > minimumConfidence) || (patch.overlap > minimumOverlap))
     {
         result = true;
     }
@@ -373,27 +270,4 @@ bool Detector::checkPatchVariace(const cv::Mat &integralFrame, const cv::Mat &sq
         result = true;
     }
     return result;
-}
-
-
-int Detector::getZoneIndex(const cv::Point &point) const
-{
-    int zoneIndex = 0;
-    int distance = 10000;
-    for (size_t i = 0; i < zones.size(); ++i)
-    {
-        cv::Point zoneCenter = classifier->getRectCenter(zones[i]);
-        if (distance > getDistance(zoneCenter, point))
-        {
-            distance = getDistance(zoneCenter, point);
-            zoneIndex = i;
-        }
-    }
-    return zoneIndex;
-}
-
-
-int Detector::getDistance(const cv::Point &first, const cv::Point &second) const
-{
-    return round(sqrt(pow((first.x - second.x), 2) + pow((first.y - second.y), 2)));
 }
