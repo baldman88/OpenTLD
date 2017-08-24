@@ -39,7 +39,18 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
                 trackedPatch = patch;
             }
         }
+
+#ifdef USE_DEBUG_INFO
+        auto start = std::chrono::high_resolution_clock::now();
+#endif // USE_LOGGING
+
         detector->detect(frame, targetRect, detectedPatches);
+
+#ifdef USE_DEBUG_INFO
+        auto stop = std::chrono::high_resolution_clock::now();
+        std::cout << "Detector elapsed = " << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
+#endif // USE_LOGGING
+
         float maxDetectedConfidence = 0.0;
         int maxDetectedConfidenceIndex = -1;
         for (size_t i = 0; i < detectedPatches.size(); ++i)
@@ -61,7 +72,11 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
                 }
             }
         }
+
+#ifdef USE_DEBUG_INFO
         std::cout << "maxDetectedConfidence = " << maxDetectedConfidence << std::endl;
+#endif // USE_LOGGING
+
         if (((trackedPatch.confidence < reinitConfidence)
             && (maxDetectedConfidence >= reinitConfidence))
             || (trackedPatch.confidence < maxDetectedConfidence))

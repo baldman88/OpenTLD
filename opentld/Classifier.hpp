@@ -29,6 +29,9 @@ private:
     std::vector<std::shared_ptr<Fern>> ferns;
     void trainNegative(const cv::Mat &frame, const cv::Rect &patchRect);
     cv::Mat transform(const cv::Mat &frame, const cv::Point2f &center, const double angle) const;
+    cv::Mat flipVertical(const cv::Mat &frame) const;
+    cv::Mat flipHorizontal(const cv::Mat &frame) const;
+    cv::Mat getIntegralFrame(const cv::Mat &frame) const;
 };
 
 #endif /* CLASSIFIER_HPP */

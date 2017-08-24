@@ -1,5 +1,6 @@
 #include "Classifier.hpp"
 #include <iostream>
+#include <opencv2/opencv.hpp>
 
 
 Classifier::Classifier(const int fernsCount, const int featuresCount, const double minFeatureScale, const double maxFeatureScale)
@@ -102,12 +103,69 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
         }
 
         cv::Point2f warpPatchRectCenter = getRectCenter(warpPatchRect);
-        std::vector<cv::Mat> warpFrames(angles.size());
-        concurrent::blockingMapped(angles.begin(), angles.end(), warpFrames.begin(),
-                                   std::bind(&Classifier::transform, this, warpFrame, warpPatchRectCenter, std::placeholders::_1));
+
+#ifdef USE_DEBUG_INFO
+        auto start = std::chrono::high_resolution_clock::now();
+#endif // USE_LOGGING
+
+        std::vector<cv::Mat> tmpFrames;
+        tmpFrames.push_back(warpFrame);
+        cv::Mat tmp;
+        cv::flip(warpFrame, tmp, 1);
+        tmpFrames.push_back(tmp.clone());
+        cv::flip(warpFrame, tmp, 0);
+        tmpFrames.push_back(tmp.clone());
+        cv::flip(warpFrame, tmp, -1);
+        tmpFrames.push_back(tmp.clone());
+
+        std::vector<cv::Mat> warpFrames;
+
+        for (size_t i = 0; i < tmpFrames.size(); ++i)
+        {
+            for (size_t j = 0; j < angles.size(); ++j)
+            {
+                warpFrames.push_back(transform(tmpFrames.at(i), warpPatchRectCenter, angles.at(j)));
+            }
+        }
+
+#ifdef USE_DEBUG_INFO
+        auto stop = std::chrono::high_resolution_clock::now();
+        std::cout << "Classifier for warpFrames elapsed = "
+                << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
+        start = stop;
+#endif // USE_LOGGING
+
+//        if (flag == false)
+//        {
+//            std::cout << "Write images ..." << std::endl;
+//            cv::Rect target(warpPatchRectCenter.x - static_cast<int>(round(patchRect.width / 2)),
+//                            warpPatchRectCenter.y - static_cast<int>(round(patchRect.height / 2)),
+//                            patchRect.width, patchRect.height);
+//            for (size_t i = 0; i < warpFrames.size(); ++i)
+//            {
+//                cv::Mat tmp = warpFrames.at(i).clone();
+//                cv::rectangle(tmp, target, cv::Scalar(0, 255, 0));
+//                cv::imwrite("/home/baldman/1/" + std::to_string(i) + ".png", tmp);
+//            }
+//            flag = true;
+//        }
+
+        tmpFrames = warpFrames;
+        concurrent::blockingMapped(tmpFrames.begin(), tmpFrames.end(), warpFrames.begin(),
+                                   std::bind(&Classifier::getIntegralFrame, this, std::placeholders::_1));
+
+#ifdef USE_DEBUG_INFO
+        stop = std::chrono::high_resolution_clock::now();
+        std::cout << "Classifier for integralFrames elapsed = "
+                << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
+        start = stop;
+#endif // USE_LOGGING
+
+//        std::vector<cv::Mat> warpFrames(angles.size());
+//        concurrent::blockingMapped(angles.begin(), angles.end(), warpFrames.begin(),
+//                                   std::bind(&Classifier::transform, this, warpFrame, warpPatchRectCenter, std::placeholders::_1));
 
         std::vector<cv::Rect> positivePatches;
-
 
         for (auto widthsIter = widths.begin(); widthsIter != widths.end(); ++widthsIter)
         {
@@ -133,11 +191,26 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
                 }
             }
         }
+
+#ifdef USE_DEBUG_INFO
+        stop = std::chrono::high_resolution_clock::now();
+        std::cout << "Classifier for make positive patches elapsed = "
+                << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
+        start = stop;
+#endif // USE_LOGGING
+
         for (size_t i = 0; i < warpFrames.size(); ++i)
         {
             concurrent::blockingMap(positivePatches.begin(), positivePatches.end(),
                                     std::bind(&Classifier::train, this, warpFrames.at(i), std::placeholders::_1, true));
         }
+
+#ifdef USE_DEBUG_INFO
+        stop = std::chrono::high_resolution_clock::now();
+        std::cout << "Classifier for training elapsed = "
+                << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
+#endif // USE_LOGGING
+
     }
 }
 
@@ -147,8 +220,30 @@ cv::Mat Classifier::transform(const cv::Mat &frame, const cv::Point2f &center, c
     cv::Mat transformMatrix = cv::getRotationMatrix2D(center, angle, 1.0);
     cv::Mat transformedFrame;
     cv::warpAffine(frame, transformedFrame, transformMatrix, frame.size());
+    return transformedFrame;
+}
+
+
+cv::Mat Classifier::flipVertical(const cv::Mat &frame) const
+{
+    cv::Mat flippedFrame;
+    cv::flip(frame, flippedFrame, 0);
+    return flippedFrame;
+}
+
+
+cv::Mat Classifier::flipHorizontal(const cv::Mat &frame) const
+{
+    cv::Mat flippedFrame;
+    cv::flip(frame, flippedFrame, 1);
+    return flippedFrame;
+}
+
+
+cv::Mat Classifier::getIntegralFrame(const cv::Mat &frame) const
+{
     cv::Mat integralFrame;
-    cv::integral(transformedFrame, integralFrame);
+    cv::integral(frame, integralFrame);
     return integralFrame;
 }
 

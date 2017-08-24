@@ -6,6 +6,7 @@
 
 #include "opentld/TLDTracker.hpp"
 
+#define DEBUG_INFO 1
 
 TLDTracker tracker;
 cv::Rect roi;
@@ -49,17 +50,26 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
 }
 
 
+void drawTargetRect(cv::Mat& frame, const cv::Rect& rect, const cv::Scalar& color)
+{
+    cv::line(frame, rect.tl(), rect.tl() + cv::Point(8, 0), color); // top left -
+    cv::line(frame, rect.tl(), rect.tl() + cv::Point(0, 8), color); // top left |
+    cv::line(frame, rect.tl() + cv::Point(rect.width - 8, 0), rect.tl() + cv::Point(rect.width, 0), color); // top right -
+    cv::line(frame, rect.tl() + cv::Point(rect.width, 0), rect.tl() + cv::Point(rect.width, 8), color); // top right |
+    cv::line(frame, rect.br() + cv::Point(-8, 0), rect.br(), color); // bottom right -
+    cv::line(frame, rect.br() + cv::Point(0, -8), rect.br(), color); // bottom right |
+    cv::line(frame, rect.tl() + cv::Point(0, rect.height), rect.tl() + cv::Point(8, rect.height), color); // bottom left -
+    cv::line(frame, rect.tl() + cv::Point(0, rect.height - 8), rect.tl() + cv::Point(0, rect.height), color); // bottom left |
+}
+
+
 int main(int argc, char* argv[])
 {
     cv::VideoCapture capture;
-#ifdef DEBUG
-    std::cout << "This is debug!" << std::endl;
-#endif
     if (capture.open("/home/baldman/YandexDisk/samples/videos/helicopters/7.mp4") == false)
     {
         capture.open(0);
     }
-    std::cout << capture.get(CV_CAP_PROP_FPS) << std::endl;
     cv::namedWindow("Output");
     cv::setMouseCallback("Output", mouseHandler);
     char key = 0;
@@ -87,12 +97,20 @@ int main(int argc, char* argv[])
             {
                 if (isTargetSelected == true)
                 {
+#ifdef USE_DEBUG_INFO
+                    std::cout << "=======================================" << std::endl;
                     auto begin = std::chrono::high_resolution_clock::now();
+#endif // USE_LOGGING
+
                     roi = tracker.getTargetRect(frame, roi);
+
+#ifdef USE_DEBUG_INFO
                     auto end = std::chrono::high_resolution_clock::now();
-                    std::cout << "Time elapsed = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << std::endl;
+                    std::cout << "Time elapsed = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "\n" << std::endl;
+#endif // USE_LOGGING
                 }
-                cv::rectangle(frame, roi, cv::Scalar(0, 255, 0));
+//                cv::rectangle(frame, roi, cv::Scalar(0, 255, 0));
+                drawTargetRect(frame, roi, cv::Scalar(0, 0, 255));
                 cv::imshow("Output", frame);
             }
             else
