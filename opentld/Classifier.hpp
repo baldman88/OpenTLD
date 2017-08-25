@@ -32,6 +32,11 @@ private:
     cv::Mat flipVertical(const cv::Mat &frame) const;
     cv::Mat flipHorizontal(const cv::Mat &frame) const;
     cv::Mat getIntegralFrame(const cv::Mat &frame) const;
+    void calculateScaledSizes(const cv::Rect& patchRect, const cv::Size& frameSize,
+                              std::set<int>& widths, std::set<int>& heights) const;
+    double getMaxRotateAngle(const cv::Rect& patchRect, const cv::Size& frameSize,
+                             const std::set<int>& widths, const std::set<int>& heights) const;
+//    void getWarpFrames(const cv::Mat& warpFrame, const std::vector<double>& angles, std::vector<cv::Mat>& warpFrames) const;
 };
 
 #endif /* CLASSIFIER_HPP */

@@ -57,42 +57,13 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
 
     std::set<int> widths;
     std::set<int> heights;
-
-    for (double scale = 0.95; scale <= 1.05; scale += 0.05)
-    {
-        int width = static_cast<int>(round(patchRect.width * scale));
-        int minX = (patchRectCenter.x - static_cast<int>(round(width / 2))) - 3;
-        int maxX = (patchRectCenter.x + static_cast<int>(round(width / 2))) + 3;
-        if ((minX >= 0) && (maxX < frame.cols))
-        {
-            widths.insert(width);
-        }
-
-        int height = static_cast<int>(round(patchRect.height * scale));
-        int minY = (patchRectCenter.y - static_cast<int>(round(height / 2))) - 3;
-        int maxY = (patchRectCenter.y + static_cast<int>(round(height / 2))) + 3;
-        if ((minY >= 0) && (maxY < frame.rows))
-        {
-            heights.insert(height);
-        }
-    }
+    calculateScaledSizes(patchRect, frame.size(), widths, heights);
 
     if ((widths.empty() != true) && (heights.empty() != true))
     {
+        double maxAngle = getMaxRotateAngle(patchRect, frame.size(), widths, heights);
         cv::Size warpFrameSize(*(widths.rbegin()), *(heights.rbegin()));
-        double maxAngle;
-        cv::Rect warpFrameRect;
-        for (maxAngle = 10.0; maxAngle >= 0.0; maxAngle -= 1.0)
-        {
-            warpFrameRect = cv::RotatedRect(patchRectCenter, warpFrameSize, maxAngle).boundingRect();
-            if ((warpFrameRect.tl().x >= 0)
-                && (warpFrameRect.tl().y >= 0)
-                && (warpFrameRect.br().x < frame.cols)
-                && (warpFrameRect.br().y < frame.rows))
-            {
-                break;
-            }
-        }
+        cv::Rect warpFrameRect = cv::RotatedRect(patchRectCenter, warpFrameSize, maxAngle).boundingRect();
 
         cv::Rect warpPatchRect((patchRect.x - warpFrameRect.x), (patchRect.y - warpFrameRect.y), patchRect.width, patchRect.height);
         cv::Mat warpFrame = frame(warpFrameRect);
@@ -290,4 +261,50 @@ cv::Point2f Classifier::getRectCenter(const cv::Rect &rect) const
     float x = static_cast<float>(round(rect.x + (rect.width / 2.0)));
     float y = static_cast<float>(round(rect.y + (rect.height / 2.0)));
     return cv::Point2f(x, y);
+}
+
+
+void Classifier::calculateScaledSizes(const cv::Rect& patchRect, const cv::Size& frameSize, std::set<int>& widths, std::set<int>& heights) const
+{
+    cv::Point2f patchRectCenter = getRectCenter(patchRect);
+    for (double scale = 0.95; scale <= 1.05; scale += 0.05)
+    {
+        int width = static_cast<int>(round(patchRect.width * scale));
+        int minX = (patchRectCenter.x - static_cast<int>(round(width / 2))) - 3;
+        int maxX = (patchRectCenter.x + static_cast<int>(round(width / 2))) + 3;
+        if ((minX >= 0) && (maxX < frameSize.width))
+        {
+            widths.insert(width);
+        }
+
+        int height = static_cast<int>(round(patchRect.height * scale));
+        int minY = (patchRectCenter.y - static_cast<int>(round(height / 2))) - 3;
+        int maxY = (patchRectCenter.y + static_cast<int>(round(height / 2))) + 3;
+        if ((minY >= 0) && (maxY < frameSize.height))
+        {
+            heights.insert(height);
+        }
+    }
+}
+
+
+double Classifier::getMaxRotateAngle(const cv::Rect& patchRect, const cv::Size& frameSize,
+                                     const std::set<int>& widths, const std::set<int>& heights) const
+{
+    cv::Point2f patchRectCenter = getRectCenter(patchRect);
+    cv::Size warpFrameSize(*(widths.rbegin()), *(heights.rbegin()));
+    double maxAngle;
+    cv::Rect warpFrameRect;
+    for (maxAngle = 10.0; maxAngle >= 0.0; maxAngle -= 1.0)
+    {
+        cv::Rect warpFrameRect = cv::RotatedRect(patchRectCenter, warpFrameSize, maxAngle).boundingRect();
+        if ((warpFrameRect.tl().x >= 0)
+            && (warpFrameRect.tl().y >= 0)
+            && (warpFrameRect.br().x < frameSize.width)
+            && (warpFrameRect.br().y < frameSize.height))
+        {
+            break;
+        }
+    }
+    return maxAngle;
 }
