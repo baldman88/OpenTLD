@@ -16,6 +16,7 @@ set(SOURCES 	Classifier.cpp
 		Detector.cpp
 		Feature.cpp
 		Fern.cpp
+		Leaf.cpp
 		KalmanFilter.cpp
 		Patch.cpp
 		TLDTracker.cpp

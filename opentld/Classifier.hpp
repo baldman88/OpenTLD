@@ -40,7 +40,7 @@ private:
     template<typename T>
     void trainOnRange(const cv::Mat &frame, const T first, const T last, const bool isPositive)
     {
-        std::for_each(first, last, std::bind(&Classifier::train, this, std::ref(frame), std::placeholders::_1, true));
+        std::for_each(first, last, std::bind(&Classifier::train, this, std::ref(frame), std::placeholders::_1, isPositive));
     }
     template<typename T>
     void getIntegralFramesOnRange(const cv::Mat &frame, const T first, const T last, const bool isPositive)
