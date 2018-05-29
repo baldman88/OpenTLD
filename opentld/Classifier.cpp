@@ -170,10 +170,15 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
         start = stop;
 #endif // USE_LOGGING
 
+//        using positivePatchesIterator = typename decltype(positivePatches)::iterator;
         for (size_t i = 0; i < warpFrames.size(); ++i)
         {
+//            concurrent::blockingMap(positivePatches.begin(), positivePatches.end(),
+//                                    std::bind(&Classifier::train, this, warpFrames.at(i), std::placeholders::_1, true));
             concurrent::blockingMap(positivePatches.begin(), positivePatches.end(),
-                                    std::bind(&Classifier::train, this, warpFrames.at(i), std::placeholders::_1, true));
+                                    std::bind(&Classifier::trainOnRange<decltype(positivePatches)::iterator>,
+                                              this, warpFrames.at(i), std::placeholders::_1, std::placeholders::_2, true));
+//            trainOnRange<decltype(positivePatches)::iterator>(warpFrames.at(i), positivePatches.begin(), positivePatches.end(), true);
         }
 
 #ifdef USE_DEBUG_INFO

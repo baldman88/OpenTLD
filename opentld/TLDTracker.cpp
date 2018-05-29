@@ -83,6 +83,11 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
         {
             trackedPatch = detectedPatches.at(maxDetectedConfidenceIndex);
         }
+
+#ifdef USE_DEBUG_INFO
+        start = std::chrono::high_resolution_clock::now();
+#endif // USE_LOGGING
+
         if (targetRect.area() > 0)
         {
             if ((trackedPatch.confidence >= learningConfidence)
@@ -107,6 +112,12 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
                 }
             }
         }
+
+#ifdef USE_DEBUG_INFO
+        stop = std::chrono::high_resolution_clock::now();
+        std::cout << "Classifier elapsed = " << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
+#endif // USE_LOGGING
+
         lastConfidence = trackedPatch.confidence;
     }
     return trackedPatch.rect;
