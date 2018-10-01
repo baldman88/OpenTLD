@@ -2,16 +2,15 @@
 #define CONCURRENT_HPP
 
 #include <cmath>
+#include <thread>
 #include <vector>
-#include <future>
-#include <algorithm>
 #include <functional>
 
 
 namespace concurrent
 {
     template <typename InputIterator, typename MapFunctor>
-    void for_each(InputIterator first, InputIterator last, MapFunctor mapFunctor)
+    void mapHelper(InputIterator first, InputIterator last, MapFunctor mapFunctor)
     {
         while (first != last) {
             mapFunctor(*first);
@@ -20,7 +19,7 @@ namespace concurrent
     }
 
     template<typename InputIterator, typename OutputIterator, typename MapFunctor>
-    OutputIterator for_each(InputIterator first, InputIterator last, OutputIterator result, MapFunctor mapFunctor)
+    OutputIterator mappedHelper(InputIterator first, InputIterator last, OutputIterator result, MapFunctor mapFunctor)
     {
         while (first != last)
         {
@@ -36,20 +35,28 @@ namespace concurrent
     {
         auto availableThreads = std::thread::hardware_concurrency();
         if (availableThreads < 2) {
-            mapFunctor(first, last);
+            mapHelper(first, last, mapFunctor);
         } else {
-            auto const totalSize = std::distance(first, last);
-            auto const blockSize = totalSize / availableThreads;
-            std::vector<std::thread> threads(availableThreads - 1);
-            InputIterator blockStart = first;
-            for (unsigned int i = 0; i < (availableThreads - 1); ++i) {
-                InputIterator blockEnd = blockStart;
+            const auto totalSize = std::distance(first, last);
+            const auto blockSize = static_cast<size_t>(std::ceil(1.0 * totalSize / availableThreads));
+            std::vector<std::thread> threads;
+            auto blockStart = first;
+            auto blockEnd = first;
+            for (size_t i = 0; i < (availableThreads - 1); ++i)
+            {
                 std::advance(blockEnd, blockSize);
-                threads[i] = std::thread(mapFunctor, blockStart, blockEnd);
+                threads.emplace_back(std::thread(mapHelper<InputIterator, MapFunctor>,
+                                                 blockStart, blockEnd, mapFunctor));
                 blockStart = blockEnd;
             }
-            mapFunctor(blockStart, last);
-            std::for_each(threads.begin(), threads.end(), std::mem_fn(&std::thread::join));
+            mapHelper(blockStart, last, mapFunctor);
+            for (size_t i = 0; i < threads.size(); ++i)
+            {
+                if (threads[i].joinable())
+                {
+                    threads[i].join();
+                }
+            }
         }
     }
 
@@ -60,38 +67,30 @@ namespace concurrent
         auto availableThreads = std::thread::hardware_concurrency();
         if (availableThreads < 2)
         {
-            for_each(first, last, result, mapFunctor);
+            mappedHelper(first, last, result, mapFunctor);
         }
         else
         {
-            auto const totalSize = std::distance(first, last);
-            auto const blockSize = static_cast<size_t>(std::ceil(1.0 * totalSize / availableThreads));
+            const auto totalSize = std::distance(first, last);
+            const auto blockSize = static_cast<size_t>(std::ceil(1.0 * totalSize / availableThreads));
             std::vector<std::thread> threads;
-            using InputType = typename std::iterator_traits<InputIterator>::value_type;
-            using OutputType = typename std::result_of<MapFunctor(InputType)>::type;
-            std::vector<std::vector<OutputType>> results;
+            auto blockStart = first;
+            auto blockEnd = first;
             for (size_t i = 0; i < (availableThreads - 1); ++i)
             {
-                results.emplace_back(std::vector<OutputType>(blockSize));
-            }
-            InputIterator current = first;
-            for (unsigned int i = 0; i < (availableThreads - 1); ++i)
-            {
-                InputIterator blockStart = current;
-                InputIterator blockEnd = blockStart;
                 std::advance(blockEnd, blockSize);
-                current = blockEnd;
-                threads.emplace_back(std::thread(for_each<InputIterator, OutputIterator, MapFunctor>,
-                                                 blockStart, blockEnd, results.at(i).begin(), mapFunctor));
+                threads.emplace_back(std::thread(mappedHelper<InputIterator, OutputIterator, MapFunctor>,
+                                                 blockStart, blockEnd, result, mapFunctor));
+                blockStart = blockEnd;
+                std::advance(result, blockSize);
             }
-            result = for_each(current, last, result, mapFunctor);
-            for (unsigned int i = 0; i < threads.size(); ++i)
+            result = mappedHelper(blockStart, last, result, mapFunctor);
+            for (size_t i = 0; i < threads.size(); ++i)
             {
                 if (threads[i].joinable())
                 {
                     threads[i].join();
                 }
-                result = std::copy(results.at(i).begin(), results.at(i).end(), result);
             }
         }
         return result;

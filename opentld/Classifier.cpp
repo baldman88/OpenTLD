@@ -26,7 +26,8 @@ void Classifier::trainNegative(const cv::Mat &frame, const cv::Rect &patchRect)
     double minScale = 0.5;
     double maxScale = 1.5;
     double scaleStep = 0.25;
-    for (double scale = minScale; scale <= maxScale; scale += scaleStep)
+    double scale = minScale;
+    while (scale <= maxScale)
     {
         int xMin = 0;
         int currentWidth = static_cast<int>(round(scale * patchRect.width));
@@ -47,6 +48,7 @@ void Classifier::trainNegative(const cv::Mat &frame, const cv::Rect &patchRect)
                 }
             }
         }
+        scale += scaleStep;
     }
 }
 
@@ -68,16 +70,18 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
         cv::Rect warpPatchRect((patchRect.x - warpFrameRect.x), (patchRect.y - warpFrameRect.y), patchRect.width, patchRect.height);
         cv::Mat warpFrame = frame(warpFrameRect);
         std::vector<double> angles;
-        for (double angle = -maxAngle; angle <= maxAngle; angle += 1.0)
+        double angle = -maxAngle;
+        while (angle <= maxAngle)
         {
             angles.push_back(angle);
+            angle += 1.0;
         }
 
         cv::Point2f warpPatchRectCenter = getRectCenter(warpPatchRect);
 
 #ifdef USE_DEBUG_INFO
         auto start = std::chrono::high_resolution_clock::now();
-#endif // USE_LOGGING
+#endif // USE_DEBUG_INFO
 
         std::vector<cv::Mat> tmpFrames;
         tmpFrames.push_back(warpFrame);
@@ -101,34 +105,26 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
 
 #ifdef USE_DEBUG_INFO
         auto stop = std::chrono::high_resolution_clock::now();
-        std::cout << "Classifier for warpFrames elapsed = "
-                << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
+        std::cout << "Classifier: for warpFrames elapsed = "
+                << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << " ms" << std::endl;
         start = stop;
-#endif // USE_LOGGING
+#endif // USE_DEBUG_INFO
 
-        tmpFrames = warpFrames;
-        concurrent::blockingMapped(tmpFrames.begin(), tmpFrames.end(), warpFrames.begin(),
+        concurrent::blockingMapped(warpFrames.begin(), warpFrames.end(), warpFrames.begin(),
                                    std::bind(&Classifier::getIntegralFrame, this, std::placeholders::_1));
 
 #ifdef USE_DEBUG_INFO
         stop = std::chrono::high_resolution_clock::now();
-        std::cout << "Classifier for integralFrames elapsed = "
-                << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
+        std::cout << "Classifier: for integralFrames elapsed = "
+                << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << " ms" << std::endl;
         start = stop;
-#endif // USE_LOGGING
-
-//        std::vector<cv::Mat> warpFrames(angles.size());
-//        concurrent::blockingMapped(angles.begin(), angles.end(), warpFrames.begin(),
-//                                   std::bind(&Classifier::transform, this, warpFrame, warpPatchRectCenter, std::placeholders::_1));
+#endif // USE_DEBUG_INFO
 
         std::vector<cv::Rect> positivePatches;
-
-        for (auto widthsIter = widths.begin(); widthsIter != widths.end(); ++widthsIter)
+        for (const auto width : widths)
         {
-            int width = *widthsIter;
-            for (auto heightsIter = heights.begin(); heightsIter != heights.end(); ++heightsIter)
+            for (const auto height : heights)
             {
-                int height = *heightsIter;
                 for (int xOffset = -1; xOffset <= 1; xOffset += 1)
                 {
                     for (int yOffset = -1; yOffset <= 1; yOffset += 1)
@@ -150,28 +146,23 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
 
 #ifdef USE_DEBUG_INFO
         stop = std::chrono::high_resolution_clock::now();
-        std::cout << "Classifier for make positive patches elapsed = "
-                << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
+        std::cout << "Classifier: for make positive patches elapsed = "
+                << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << " ms" << std::endl;
         start = stop;
-#endif // USE_LOGGING
+#endif // USE_DEBUG_INFO
 
-//        using positivePatchesIterator = typename decltype(positivePatches)::iterator;
-        std::cout << "warpFrames.size() = " << warpFrames.size() << std::endl;
-        for (size_t i = 0; i < warpFrames.size(); ++i)
+        std::cout << "Classifier: warpFrames.size() = " << warpFrames.size() << std::endl;
+        for (const auto frame : warpFrames)
         {
-//            concurrent::blockingMap(positivePatches.begin(), positivePatches.end(),
-//                                    std::bind(&Classifier::train, this, warpFrames.at(i), std::placeholders::_1, true));
             concurrent::blockingMap(positivePatches.begin(), positivePatches.end(),
-                                    std::bind(&Classifier::trainOnRange<decltype(positivePatches)::iterator>,
-                                              this, warpFrames.at(i), std::placeholders::_1, std::placeholders::_2, true));
-//            trainOnRange<decltype(positivePatches)::iterator>(warpFrames.at(i), positivePatches.begin(), positivePatches.end(), true);
+                                    std::bind(&Classifier::train, this, frame, std::placeholders::_1, true));
         }
 
 #ifdef USE_DEBUG_INFO
         stop = std::chrono::high_resolution_clock::now();
-        std::cout << "Classifier for training elapsed = "
-                << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
-#endif // USE_LOGGING
+        std::cout << "Classifier: for training elapsed = "
+                << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << " ms" << std::endl;
+#endif // USE_DEBUG_INFO
 
     }
 }

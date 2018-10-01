@@ -19,7 +19,7 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
     cv::Mat integralFrame;
     cv::integral(frame, integralFrame);
     Patch trackedPatch;
-    if (isInitialised == false) {
+    if (!isInitialised) {
         classifier->init(frame, targetRect);
         detector->init(frame, targetRect);
         tracker->init(frame);
@@ -42,14 +42,14 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
 
 #ifdef USE_DEBUG_INFO
         auto start = std::chrono::high_resolution_clock::now();
-#endif // USE_LOGGING
+#endif // USE_DEBUG_INFO
 
         detector->detect(frame, targetRect, detectedPatches);
 
 #ifdef USE_DEBUG_INFO
         auto stop = std::chrono::high_resolution_clock::now();
-        std::cout << "Detector elapsed = " << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
-#endif // USE_LOGGING
+        std::cout << "Detector: elapsed = " << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << " ms" << std::endl;
+#endif // USE_DEBUG_INFO
 
         float maxDetectedConfidence = 0.0;
         int maxDetectedConfidenceIndex = -1;
@@ -74,8 +74,8 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
         }
 
 #ifdef USE_DEBUG_INFO
-        std::cout << "maxDetectedConfidence = " << maxDetectedConfidence << std::endl;
-#endif // USE_LOGGING
+        std::cout << "TLDTracker: maxDetectedConfidence = " << maxDetectedConfidence << std::endl;
+#endif // USE_DEBUG_INFO
 
         if (((trackedPatch.confidence < reinitConfidence)
             && (maxDetectedConfidence >= reinitConfidence))
@@ -86,7 +86,7 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
 
 #ifdef USE_DEBUG_INFO
         start = std::chrono::high_resolution_clock::now();
-#endif // USE_LOGGING
+#endif // USE_DEBUG_INFO
 
         if (targetRect.area() > 0)
         {
@@ -115,8 +115,8 @@ cv::Rect TLDTracker::getTargetRect(cv::Mat &frameRGB, const cv::Rect &targetRect
 
 #ifdef USE_DEBUG_INFO
         stop = std::chrono::high_resolution_clock::now();
-        std::cout << "Classifier elapsed = " << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
-#endif // USE_LOGGING
+        std::cout << "Classifier: elapsed = " << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << " ms" << std::endl;
+#endif // USE_DEBUG_INFO
 
         lastConfidence = trackedPatch.confidence;
     }

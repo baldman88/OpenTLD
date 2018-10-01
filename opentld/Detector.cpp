@@ -94,19 +94,12 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
     double maxScale = 1.025;
     double scaleStep = 0.025;
 
-//    if ((currentPatchRect.x != patchRect.x)
-//        || (currentPatchRect.y != patchRect.y)
-//        || (currentPatchRect.width != patchRect.width)
-//        || (currentPatchRect.height != patchRect.height))
-//    {
-//        minScale = 0.9;
-//        maxScale = 1.1;
-//    }
-
-    for (double scale = minScale; scale <= maxScale; scale += scaleStep)
+    double scale = minScale;
+    while (scale <= maxScale)
     {
         widths.insert(static_cast<int>(round(lastPatchRect.width * scale)));
         heights.insert(static_cast<int>(round(lastPatchRect.height * scale)));
+        scale += scaleStep;
     }
 
     double stepDivider = 20.0;
@@ -116,24 +109,15 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
     cv::Mat integralFrame;
     cv::Mat squareIntegralFrame;
     cv::integral(frame, integralFrame, squareIntegralFrame);
-    //    int xStart = std::max((currentPatchRectCenter.x - (currentPatchRect.width / 2) - currentPatchRect.width), 0);
-    //    int yStart = std::max((currentPatchRectCenter.y - (currentPatchRect.height / 2) - currentPatchRect.height), 0);
-    //    int xStop = std::min((frameWidth - currentPatchRect.width),
-    //                         (currentPatchRectCenter.x - (currentPatchRect.width / 2) + currentPatchRect.width));
-    //    int yStop = std::min((frameHeight - currentPatchRect.height),
-    //                         (currentPatchRectCenter.y - (currentPatchRect.height / 2) + currentPatchRect.height));
-    //    varianceThreshold = getPatchVariance(integralFrame, squareIntegralFrame,
-    //                                         cv::Rect(xStart, yStart, (xStop - xStart), (yStop - yStart)));
 
 #ifdef USE_DEBUG_INFO
     auto start = std::chrono::high_resolution_clock::now();
-#endif // USE_LOGGING
+#endif // USE_DEBUG_INFO
 
     std::vector<cv::Rect> testRects;
     failureScaleFactor = std::max((failureCounter / 20), 1);
-    for (auto widthIterator = widths.begin(); widthIterator != widths.end(); ++widthIterator)
+    for (const auto currentWidth : widths)
     {
-        int currentWidth = (*widthIterator);
         int xStep = static_cast<int>(round(currentWidth / stepDivider));
         int xCurrent;
         int xMin;
@@ -147,7 +131,6 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
         }
         else
         {
-            //            xCurrent = ((currentPatchRectCenter.x + predictedPatchRectCenter.x) / 2) - (currentWidth / 2);
             xCurrent = currentPatchRectCenter.x - (static_cast<int>(round(currentWidth / 2.0)));
             xMin = std::max((xCurrent - (static_cast<int>(round(currentWidth / 2.0)) * failureScaleFactor)), 0);
             xMax = std::min((frameWidth - static_cast<int>(round(currentWidth / 2.0))),
@@ -155,9 +138,8 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
         }
         for (int x = xMin; x < xMax; x += xStep)
         {
-            for (auto heightIterator = heights.begin(); heightIterator != heights.end(); ++heightIterator)
+            for (const auto currentHeight : heights)
             {
-                int currentHeight = (*heightIterator);
                 int yStep = static_cast<int>(round(currentHeight / stepDivider));
                 int yCurrent;
                 int yMin;
@@ -171,7 +153,6 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
                 }
                 else
                 {
-                    //                    yCurrent = ((currentPatchRectCenter.y + predictedPatchRectCenter.y) / 2) - (currentHeight / 2);
                     yCurrent = currentPatchRectCenter.y - (static_cast<int>(round(currentHeight / 2.0)));
                     yMin = std::max((yCurrent - (static_cast<int>(round(currentHeight / 2.0)) * failureScaleFactor)), 0);
                     yMax = std::min((frameHeight - static_cast<int>(round(currentHeight / 2.0))),
@@ -187,27 +168,30 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
 
 #ifdef USE_DEBUG_INFO
     auto stop = std::chrono::high_resolution_clock::now();
-    std::cout << "Detector for find test rects elapsed = "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
+    std::cout << "Detector: for find test rects elapsed = "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << " ms" << std::endl;
     start = stop;
-#endif // USE_LOGGING
+#endif // USE_DEBUG_INFO
 
     //    auto end = concurrent::blockingFilter(testRects.begin(), testRects.end(),
     //                                          std::bind(&Detector::checkPatchVariace, this,
     //                                                    integralFrame, squareIntegralFrame, std::placeholders::_1));
     //    testRects.erase(end, testRects.end());
-    std::cout << "testRects.size() = " << testRects.size() << std::endl;
-    std::cout << "size of rect = " << sizeof(testRects.at(0)) << std::endl;
+
+#ifdef USE_DEBUG_INFO
+    std::cout << "Detector: testRects.size() = " << testRects.size() << std::endl;
+#endif // USE_DEBUG_INFO
+
     patches.resize(testRects.size());
     concurrent::blockingMapped(testRects.begin(), testRects.end(), patches.begin(),
                                std::bind(&Detector::getPatch, this, std::placeholders::_1, integralFrame, currentPatchRect));
 
 #ifdef USE_DEBUG_INFO
     stop = std::chrono::high_resolution_clock::now();
-    std::cout << "Detector for getPatch elapsed = "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
+    std::cout << "Detector: for getPatch elapsed = "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << " ms" << std::endl;
     start = stop;
-#endif // USE_LOGGING
+#endif // USE_DEBUG_INFO
 
     if (!patches.empty())
     {
@@ -218,10 +202,9 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
 
 #ifdef USE_DEBUG_INFO
     stop = std::chrono::high_resolution_clock::now();
-    std::cout << "Detector for checkPatchConformity elapsed = "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
-#endif // USE_LOGGING
-    //    patches.push_back(Patch(predictedPatchRect, 0, false));
+    std::cout << "Detector: for checkPatchConformity elapsed = "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << " ms" << std::endl;
+#endif // USE_DEBUG_INFO
 }
 
 

@@ -23,13 +23,13 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
         roi = cv::Rect(0, 0, 0, 0);
         isTargetSelected = false;
     }
-    if ((event == CV_EVENT_LBUTTONDOWN) && (isTargetSelected == false))
+    if ((event == CV_EVENT_LBUTTONDOWN) && !isTargetSelected)
     {
         isSelectionActive = true;
         roi.x = x;
         roi.y = y;
     }
-    if ((event == CV_EVENT_MOUSEMOVE) && (isSelectionActive == true))
+    if ((event == CV_EVENT_MOUSEMOVE) && isSelectionActive)
     {
         roi.width = x - roi.x;
         roi.height = y - roi.y;
@@ -72,11 +72,11 @@ int main(int argc, char* argv[])
 	{
 		isCaptureOpened = capture.open(argv[1]);
 	}
-	if (isCaptureOpened == false)
+	if (!isCaptureOpened)
 	{
 		isCaptureOpened = capture.open(0);
 	}
-	if (isCaptureOpened == true)
+	if (isCaptureOpened)
 	{
 		cv::namedWindow("Output");
 		cv::setMouseCallback("Output", mouseHandler);
@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
 			if (key == 32)
 			{
 				cv::Mat tmp;
-				while (isTargetSelected == false)
+				while (!isTargetSelected)
 				{
 					tmp = frame.clone();
 					char k = cv::waitKey(1);
@@ -101,21 +101,22 @@ int main(int argc, char* argv[])
 			}
 			else
 			{
-				if (capture.read(frame) == true)
+				if (capture.read(frame))
 				{
-					if (isTargetSelected == true)
+					if (isTargetSelected)
 					{
 #ifdef USE_DEBUG_INFO
 						std::cout << "=======================================" << std::endl;
 						auto begin = std::chrono::high_resolution_clock::now();
-#endif // USE_LOGGING
+#endif // USE_DEBUG_INFO
 
 						roi = tracker.getTargetRect(frame, roi);
 
 #ifdef USE_DEBUG_INFO
 						auto end = std::chrono::high_resolution_clock::now();
-						std::cout << "Time elapsed = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "\n" << std::endl;
-#endif // USE_LOGGING
+						std::cout << "Time elapsed = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
+								  << " ms" << "\n" << std::endl;
+#endif // USE_DEBUG_INFO
 					}
 					if ((roi.width > 0) && (roi.height > 0))
 					{

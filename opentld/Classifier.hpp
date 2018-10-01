@@ -25,12 +25,6 @@ public:
     cv::Point2f getRectCenter(const cv::Rect &rect) const;
     void trainPositive(const cv::Mat &frame, const cv::Rect &patchRect);
 
-    template<typename T>
-    void trainOnRange(const cv::Mat &frame, const T first, const T last, const bool isPositive)
-    {
-        std::for_each(first, last, std::bind(&Classifier::train, this, std::ref(frame), std::placeholders::_1, isPositive));
-    }
-
 private:
     std::vector<std::shared_ptr<Fern>> ferns;
     void trainNegative(const cv::Mat &frame, const cv::Rect &patchRect);
