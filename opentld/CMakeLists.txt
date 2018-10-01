@@ -19,7 +19,8 @@ set(SOURCES 	Classifier.cpp
 		KalmanFilter.cpp
 		Patch.cpp
 		TLDTracker.cpp
-		Tracker.cpp)
+		Tracker.cpp
+		Leaf.cpp)
 
 #aux_source_directory("." SOURCES)
 

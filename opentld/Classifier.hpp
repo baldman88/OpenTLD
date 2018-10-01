@@ -25,6 +25,12 @@ public:
     cv::Point2f getRectCenter(const cv::Rect &rect) const;
     void trainPositive(const cv::Mat &frame, const cv::Rect &patchRect);
 
+    template<typename T>
+    void trainOnRange(const cv::Mat &frame, const T first, const T last, const bool isPositive)
+    {
+        std::for_each(first, last, std::bind(&Classifier::train, this, std::ref(frame), std::placeholders::_1, isPositive));
+    }
+
 private:
     std::vector<std::shared_ptr<Fern>> ferns;
     void trainNegative(const cv::Mat &frame, const cv::Rect &patchRect);
@@ -37,16 +43,6 @@ private:
     double getMaxRotateAngle(const cv::Rect& patchRect, const cv::Size& frameSize,
                              const std::set<int>& widths, const std::set<int>& heights) const;
 //    void getWarpFrames(const cv::Mat& warpFrame, const std::vector<double>& angles, std::vector<cv::Mat>& warpFrames) const;
-    template<typename T>
-    void trainOnRange(const cv::Mat &frame, const T first, const T last, const bool isPositive)
-    {
-        std::for_each(first, last, std::bind(&Classifier::train, this, std::ref(frame), std::placeholders::_1, true));
-    }
-    template<typename T>
-    void getIntegralFramesOnRange(const cv::Mat &frame, const T first, const T last, const bool isPositive)
-    {
-        std::for_each(first, last, std::bind(&Classifier::getIntegralFrame, this, std::placeholders::_1));
-    }
 };
 
 #endif /* CLASSIFIER_HPP */

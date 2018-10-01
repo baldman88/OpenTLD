@@ -14,7 +14,7 @@ Classifier::Classifier(const int fernsCount, const int featuresCount, const doub
 
 void Classifier::train(const cv::Mat &frame, const cv::Rect &patchRect, const bool isPositive)
 {
-    for (auto fern: ferns)
+    for (const auto& fern: ferns)
     {
         fern->train(frame, patchRect, isPositive);
     }
@@ -59,7 +59,7 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
     std::set<int> heights;
     calculateScaledSizes(patchRect, frame.size(), widths, heights);
 
-    if ((widths.empty() != true) && (heights.empty() != true))
+    if (!widths.empty() && !heights.empty())
     {
         double maxAngle = getMaxRotateAngle(patchRect, frame.size(), widths, heights);
         cv::Size warpFrameSize(*(widths.rbegin()), *(heights.rbegin()));
@@ -106,21 +106,6 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
         start = stop;
 #endif // USE_LOGGING
 
-//        if (flag == false)
-//        {
-//            std::cout << "Write images ..." << std::endl;
-//            cv::Rect target(warpPatchRectCenter.x - static_cast<int>(round(patchRect.width / 2)),
-//                            warpPatchRectCenter.y - static_cast<int>(round(patchRect.height / 2)),
-//                            patchRect.width, patchRect.height);
-//            for (size_t i = 0; i < warpFrames.size(); ++i)
-//            {
-//                cv::Mat tmp = warpFrames.at(i).clone();
-//                cv::rectangle(tmp, target, cv::Scalar(0, 255, 0));
-//                cv::imwrite("/home/baldman/1/" + std::to_string(i) + ".png", tmp);
-//            }
-//            flag = true;
-//        }
-
         tmpFrames = warpFrames;
         concurrent::blockingMapped(tmpFrames.begin(), tmpFrames.end(), warpFrames.begin(),
                                    std::bind(&Classifier::getIntegralFrame, this, std::placeholders::_1));
@@ -148,15 +133,15 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
                 {
                     for (int yOffset = -1; yOffset <= 1; yOffset += 1)
                     {
-                        int x = warpPatchRectCenter.x - static_cast<int>(round(width / 2)) + xOffset;
-                        int y = warpPatchRectCenter.y - static_cast<int>(round(height / 2)) + yOffset;
+                        int x = static_cast<int>(warpPatchRectCenter.x - static_cast<int>(round(width / 2)) + xOffset);
+                        int y = static_cast<int>(warpPatchRectCenter.y - static_cast<int>(round(height / 2)) + yOffset);
                         cv::Rect testPatchRect(x, y, width, height);
                         if ((testPatchRect.tl().x >= 0)
                             && (testPatchRect.tl().y >= 0)
                             && (testPatchRect.br().x < warpFrameRect.width)
                             && (testPatchRect.br().y < warpFrameRect.height))
                         {
-                            positivePatches.push_back(cv::Rect(x, y, width, height));
+                            positivePatches.emplace_back(cv::Rect(x, y, width, height));
                         }
                     }
                 }
@@ -171,6 +156,7 @@ void Classifier::trainPositive(const cv::Mat &frame, const cv::Rect &patchRect)
 #endif // USE_LOGGING
 
 //        using positivePatchesIterator = typename decltype(positivePatches)::iterator;
+        std::cout << "warpFrames.size() = " << warpFrames.size() << std::endl;
         for (size_t i = 0; i < warpFrames.size(); ++i)
         {
 //            concurrent::blockingMap(positivePatches.begin(), positivePatches.end(),
@@ -226,9 +212,9 @@ cv::Mat Classifier::getIntegralFrame(const cv::Mat &frame) const
 
 void Classifier::init(const cv::Mat &frame, const cv::Rect &patchRect)
 {
-    for (size_t fern = 0; fern < ferns.size(); ++fern)
+    for (const auto& fern : ferns)
     {
-        ferns.at(fern)->reset();
+        fern->reset();
     }
     cv::Mat integralFrame;
     cv::integral(frame, integralFrame);
@@ -241,9 +227,9 @@ void Classifier::init(const cv::Mat &frame, const cv::Rect &patchRect)
 double Classifier::classify(const cv::Mat &frame, const cv::Rect &patchRect) const
 {
     double sum = 0.0;
-    for (uint fern = 0; fern < ferns.size(); ++fern)
+    for (const auto& fern : ferns)
     {
-        sum += ferns.at(fern)->classify(frame, patchRect);
+        sum += fern->classify(frame, patchRect);
     }
     return (sum / ferns.size());
 }
@@ -263,8 +249,8 @@ double Classifier::getRectsOverlap(const cv::Rect &first, const cv::Rect &second
 
 cv::Point2f Classifier::getRectCenter(const cv::Rect &rect) const
 {
-    float x = static_cast<float>(round(rect.x + (rect.width / 2.0)));
-    float y = static_cast<float>(round(rect.y + (rect.height / 2.0)));
+    auto x = static_cast<float>(round(rect.x + (rect.width / 2.0)));
+    auto y = static_cast<float>(round(rect.y + (rect.height / 2.0)));
     return cv::Point2f(x, y);
 }
 
@@ -272,23 +258,25 @@ cv::Point2f Classifier::getRectCenter(const cv::Rect &rect) const
 void Classifier::calculateScaledSizes(const cv::Rect& patchRect, const cv::Size& frameSize, std::set<int>& widths, std::set<int>& heights) const
 {
     cv::Point2f patchRectCenter = getRectCenter(patchRect);
-    for (double scale = 0.95; scale <= 1.05; scale += 0.05)
+    double scale = 0.95;
+    while (scale <= 1.05)
     {
         int width = static_cast<int>(round(patchRect.width * scale));
-        int minX = (patchRectCenter.x - static_cast<int>(round(width / 2))) - 3;
-        int maxX = (patchRectCenter.x + static_cast<int>(round(width / 2))) + 3;
+        int minX = static_cast<int>((patchRectCenter.x - static_cast<int>(round(width / 2)))) - 3;
+        int maxX = static_cast<int>((patchRectCenter.x + static_cast<int>(round(width / 2)))) + 3;
         if ((minX >= 0) && (maxX < frameSize.width))
         {
             widths.insert(width);
         }
 
         int height = static_cast<int>(round(patchRect.height * scale));
-        int minY = (patchRectCenter.y - static_cast<int>(round(height / 2))) - 3;
-        int maxY = (patchRectCenter.y + static_cast<int>(round(height / 2))) + 3;
+        int minY = static_cast<int>((patchRectCenter.y - static_cast<int>(round(height / 2)))) - 3;
+        int maxY = static_cast<int>((patchRectCenter.y + static_cast<int>(round(height / 2)))) + 3;
         if ((minY >= 0) && (maxY < frameSize.height))
         {
             heights.insert(height);
         }
+        scale += 0.05;
     }
 }
 
@@ -298,15 +286,15 @@ double Classifier::getMaxRotateAngle(const cv::Rect& patchRect, const cv::Size& 
 {
     cv::Point2f patchRectCenter = getRectCenter(patchRect);
     cv::Size warpFrameSize(*(widths.rbegin()), *(heights.rbegin()));
-    double maxAngle;
-    cv::Rect warpFrameRect;
-    for (maxAngle = 10.0; maxAngle >= 0.0; maxAngle -= 1.0)
+    float maxAngle = 10.0;
+    while (maxAngle >= 0.0)
     {
-        cv::Rect warpFrameRect = cv::RotatedRect(patchRectCenter, warpFrameSize, maxAngle).boundingRect();
-        if ((warpFrameRect.tl().x >= 0)
-            && (warpFrameRect.tl().y >= 0)
-            && (warpFrameRect.br().x < frameSize.width)
-            && (warpFrameRect.br().y < frameSize.height))
+        cv::Rect boundingRect = cv::RotatedRect(patchRectCenter, warpFrameSize, maxAngle).boundingRect();
+        maxAngle -= 1.0;
+        if ((boundingRect.tl().x >= 0)
+            && (boundingRect.tl().y >= 0)
+            && (boundingRect.br().x < frameSize.width)
+            && (boundingRect.br().y < frameSize.height))
         {
             break;
         }

@@ -109,7 +109,7 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
         heights.insert(static_cast<int>(round(lastPatchRect.height * scale)));
     }
 
-    double stepDevider = 20.0;
+    double stepDivider = 20.0;
     currentPatchRectCenter = classifier->getRectCenter(currentPatchRect);
     predictedPatchRectCenter = classifier->getRectCenter(predictedPatchRect);
 
@@ -125,12 +125,16 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
     //    varianceThreshold = getPatchVariance(integralFrame, squareIntegralFrame,
     //                                         cv::Rect(xStart, yStart, (xStop - xStart), (yStop - yStart)));
 
+#ifdef USE_DEBUG_INFO
+    auto start = std::chrono::high_resolution_clock::now();
+#endif // USE_LOGGING
+
     std::vector<cv::Rect> testRects;
     failureScaleFactor = std::max((failureCounter / 20), 1);
     for (auto widthIterator = widths.begin(); widthIterator != widths.end(); ++widthIterator)
     {
         int currentWidth = (*widthIterator);
-        int xStep = static_cast<int>(round(currentWidth / stepDevider));
+        int xStep = static_cast<int>(round(currentWidth / stepDivider));
         int xCurrent;
         int xMin;
         int xMax;
@@ -154,7 +158,7 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
             for (auto heightIterator = heights.begin(); heightIterator != heights.end(); ++heightIterator)
             {
                 int currentHeight = (*heightIterator);
-                int yStep = static_cast<int>(round(currentHeight / stepDevider));
+                int yStep = static_cast<int>(round(currentHeight / stepDivider));
                 int yCurrent;
                 int yMin;
                 int yMax;
@@ -175,25 +179,48 @@ void Detector::detect(const cv::Mat &frame, const cv::Rect &patchRect, std::vect
                 }
                 for (int y = yMin; y < yMax; y += yStep)
                 {
-                    testRects.push_back(cv::Rect(x, y, currentWidth, currentHeight));
+                    testRects.emplace_back(cv::Rect(x, y, currentWidth, currentHeight));
                 }
             }
         }
     }
+
+#ifdef USE_DEBUG_INFO
+    auto stop = std::chrono::high_resolution_clock::now();
+    std::cout << "Detector for find test rects elapsed = "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
+    start = stop;
+#endif // USE_LOGGING
+
     //    auto end = concurrent::blockingFilter(testRects.begin(), testRects.end(),
     //                                          std::bind(&Detector::checkPatchVariace, this,
     //                                                    integralFrame, squareIntegralFrame, std::placeholders::_1));
     //    testRects.erase(end, testRects.end());
-    //    std::cout << "testRects.size() = " << testRects.size() << std::endl;
+    std::cout << "testRects.size() = " << testRects.size() << std::endl;
+    std::cout << "size of rect = " << sizeof(testRects.at(0)) << std::endl;
     patches.resize(testRects.size());
     concurrent::blockingMapped(testRects.begin(), testRects.end(), patches.begin(),
                                std::bind(&Detector::getPatch, this, std::placeholders::_1, integralFrame, currentPatchRect));
-    if (patches.size() > 0)
+
+#ifdef USE_DEBUG_INFO
+    stop = std::chrono::high_resolution_clock::now();
+    std::cout << "Detector for getPatch elapsed = "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
+    start = stop;
+#endif // USE_LOGGING
+
+    if (!patches.empty())
     {
         auto end = concurrent::blockingFilter(patches.begin(), patches.end(),
                                               std::bind(&Detector::checkPatchConformity, this, std::placeholders::_1));
         patches.erase(end, patches.end());
     }
+
+#ifdef USE_DEBUG_INFO
+    stop = std::chrono::high_resolution_clock::now();
+    std::cout << "Detector for checkPatchConformity elapsed = "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << std::endl;
+#endif // USE_LOGGING
     //    patches.push_back(Patch(predictedPatchRect, 0, false));
 }
 
