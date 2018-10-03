@@ -50,11 +50,11 @@ namespace concurrent
                 blockStart = blockEnd;
             }
             forEach(blockStart, last, mapFunctor);
-            for (size_t i = 0; i < threads.size(); ++i)
+            for (auto& thread : threads)
             {
-                if (threads[i].joinable())
+                if (thread.joinable())
                 {
-                    threads[i].join();
+                    thread.join();
                 }
             }
         }
@@ -85,11 +85,11 @@ namespace concurrent
                 std::advance(result, blockSize);
             }
             result = forEach(blockStart, last, result, mapFunctor);
-            for (size_t i = 0; i < threads.size(); ++i)
+            for (auto& thread : threads)
             {
-                if (threads[i].joinable())
+                if (thread.joinable())
                 {
-                    threads[i].join();
+                    thread.join();
                 }
             }
         }
